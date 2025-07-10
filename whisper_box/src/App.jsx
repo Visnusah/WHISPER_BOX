@@ -5,6 +5,7 @@ import MainSection from "./components/MainSection";
 import Footer from "./components/Footer";
 import LoginPage from "./components/LoginPage";
 import SignUpPage from "./components/SignUpPage";
+import Error404 from "./components/Error404";
 import "./App.css";
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           <Route path="/" element={<MainSection />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="*" element={<Error404 />} />
         </Routes>
         <Footer />
       </div>

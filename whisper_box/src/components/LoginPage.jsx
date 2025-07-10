@@ -2,9 +2,25 @@ import React, { useState } from "react";
 import logo from "../assets/Logo.png";
 import "../App.css";
 import { Link } from "react-router-dom";
+import LoadingOverlay from "./LoadingOverlay";
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      // Here you would redirect to dashboard
+    }, 2000);
+  };
+
+  if (loading) {
+    return <LoadingOverlay message="Welcome back! ✨\nRedirecting to your dashboard..." />;
+  }
+
   return (
     <div className="login-bg">
       <div className="login-card">
@@ -13,7 +29,7 @@ function LoginPage() {
           <span className="login-title">WHISPER BOX</span>
         </div>
         <h2 className="login-welcome">Welcome Back <span role="img" aria-label="wave">👋</span></h2>
-        <form className="login-form">
+        <form className="login-form" onSubmit={handleSubmit}>
           <input type="email" placeholder="Email" className="login-input" autoComplete="username" />
           <div className="login-password-wrapper">
             <input

@@ -1,8 +1,17 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import logo from "../assets/Logo.png";
+import LoadingOverlay from "./LoadingOverlay";
 import "../App.css";
 
 function MainSection() {
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+  if (loading) {
+    return <LoadingOverlay message="Loading your feed..." />;
+  }
   return (
     <main className="main-section">
       <div className="center-content">
