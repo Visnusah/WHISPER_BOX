@@ -1,0 +1,315 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  
+  body {
+    @apply bg-background text-text font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    line-height: 1.6;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+    transition: background-color 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+
+  /* Selection styles */
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center;
+  }
+  
+  .btn-secondary {
+    @apply bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-600 font-semibold py-3 px-6 rounded-xl border-2 border-slate-200 hover:border-indigo-300 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-100 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center;
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent hover:bg-slate-100 text-slate-600 hover:text-indigo-600 font-medium py-3 px-6 rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-100 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center;
+  }
+
+  .btn-accent {
+    @apply bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm;
+  }
+
+  .card-interactive {
+    @apply card hover:border-primary/20 hover:shadow-2xl cursor-pointer;
+  }
+
+  .card-gradient {
+    @apply bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl border border-gray-100 p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-300 bg-white placeholder-slate-400 text-slate-700;
+  }
+  
+  .textarea-field {
+    @apply w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-300 resize-none bg-white placeholder-slate-400 text-slate-700;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+
+  .floating-element {
+    @apply animate-float;
+  }
+
+  .shimmer-effect {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  .nav-link {
+    @apply flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden;
+  }
+
+  .nav-link.active {
+    @apply bg-gradient-to-r from-primary/10 to-primary/5 text-primary shadow-lg;
+  }
+
+  .nav-link:not(.active) {
+    @apply text-gray-600 hover:text-primary hover:bg-gray-100;
+  }
+
+  .post-card {
+    @apply card-interactive animate-fade-in;
+  }
+
+  .comment-bubble {
+    @apply bg-gray-50 rounded-2xl p-4 border border-gray-200 transition-all duration-300 hover:bg-gray-100;
+  }
+
+  .status-badge {
+    @apply px-3 py-1 text-xs font-semibold rounded-full;
+  }
+
+  .status-badge.admin {
+    @apply bg-secondary/20 text-secondary;
+  }
+
+  .status-badge.user {
+    @apply bg-gray-100 text-gray-700;
+  }
+
+  .hashtag {
+    @apply inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-primary/10 to-primary/5 text-primary text-sm rounded-full font-medium border border-primary/20 transition-all duration-300 hover:from-primary/20 hover:to-primary/10 hover:shadow-lg;
+  }
+
+  .vote-button {
+    @apply p-2.5 rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95;
+  }
+
+  .vote-button.upvoted {
+    @apply bg-green-100 text-green-600 shadow-lg;
+  }
+
+  .vote-button.downvoted {
+    @apply bg-red-100 text-red-600 shadow-lg;
+  }
+
+  .vote-button:not(.upvoted):not(.downvoted) {
+    @apply hover:bg-gray-100 text-gray-500 hover:text-gray-700;
+  }
+
+  .action-button {
+    @apply p-2.5 rounded-xl transition-all duration-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transform hover:scale-110 active:scale-95;
+  }
+
+  .action-button.active {
+    @apply bg-primary/10 text-primary shadow-lg;
+  }
+
+  .hero-gradient {
+    background: linear-gradient(135deg, #5633d4 0%, #e091e8 50%, #dc58c9 100%);
+  }
+
+  .feature-card {
+    @apply text-center p-8 rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-gray-200 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2;
+  }
+
+  .feature-icon {
+    @apply w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 group-hover:scale-110;
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in;
+  }
+
+  .modal-content {
+    @apply bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-scale-in;
+  }
+
+  .toast {
+    @apply flex items-center gap-3 p-4 rounded-xl border shadow-2xl animate-slide-in-right backdrop-blur-md;
+  }
+
+  .toast.success {
+    @apply bg-green-50/90 border-green-200 text-green-800;
+  }
+
+  .toast.error {
+    @apply bg-red-50/90 border-red-200 text-red-800;
+  }
+
+  .toast.warning {
+    @apply bg-yellow-50/90 border-yellow-200 text-yellow-800;
+  }
+
+  .toast.info {
+    @apply bg-blue-50/90 border-blue-200 text-blue-800;
+  }
+
+  .loading-spinner {
+    @apply animate-spin rounded-full border-4 border-gray-200 border-t-primary;
+  }
+
+  .profile-avatar {
+    @apply rounded-full object-cover border-4 border-white shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105;
+  }
+
+  .stats-card {
+    @apply card bg-gradient-to-br from-white to-gray-50 hover:from-primary/5 hover:to-gray-50 transition-all duration-500;
+  }
+
+  .tab-button {
+    @apply flex items-center space-x-2 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 relative;
+  }
+
+  .tab-button.active {
+    @apply bg-gradient-to-r from-primary/10 to-primary/5 text-primary shadow-lg;
+  }
+
+  .tab-button:not(.active) {
+    @apply text-gray-600 hover:text-primary hover:bg-gray-100;
+  }
+
+  .search-input {
+    @apply input-field pl-12 bg-slate-50 border-slate-300 focus:bg-white focus:border-indigo-500;
+  }
+
+  .trending-badge {
+    @apply bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg animate-pulse-soft;
+  }
+}
+
+/* Utility classes for enhanced animations */
+.stagger-animation > * {
+  animation-delay: calc(var(--stagger) * 100ms);
+}
+
+.hover-lift {
+  @apply transition-transform duration-300 hover:-translate-y-1;
+}
+
+.hover-glow {
+  @apply transition-all duration-300 hover:shadow-glow;
+}
+
+.text-gradient {
+  @apply bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent;
+}
+
+.border-gradient {
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, #5633d4, #e091e8) border-box;
+  border: 2px solid transparent;
+}
+
+/* Enhanced focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-4 focus:ring-primary/20 focus:ring-opacity-50;
+}
+
+/* Smooth transitions for route changes */
+.page-transition {
+  @apply animate-fade-in;
+}
+
+/* Enhanced table styles */
+.table-row {
+  @apply border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200;
+}
+
+.table-header {
+  @apply text-left py-4 px-6 font-semibold text-gray-700 bg-gray-50 border-b-2 border-gray-200;
+}
+
+.table-cell {
+  @apply py-4 px-6 text-gray-700;
+}
+
+/* Enhanced form styles */
+.form-group {
+  @apply space-y-2;
+}  .form-label {
+    @apply block text-sm font-semibold text-slate-700;
+  }
+
+.form-error {
+  @apply text-red-600 text-sm mt-1;
+}
+
+.form-help {
+  @apply text-gray-500 text-sm mt-1;
+}
+
+/* Enhanced button variants */
+.btn-danger {
+  @apply bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-red-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0;
+}
+
+.btn-success {
+  @apply bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-green-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0;
+}
+
+.btn-warning {
+  @apply bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-yellow-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0;
+}
