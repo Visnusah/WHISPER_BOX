@@ -258,15 +258,19 @@ export const postsAPI = {
 
 // Comments API
 export const commentsAPI = {
-  async addComment(postId, content) {
-    return await apiRequest(`/comments`, {
+  async createComment(postId, commentData) {
+    return await apiRequest(`/posts/${postId}/comments`, {
       method: 'POST',
-      body: JSON.stringify({ postId, content })
+      body: JSON.stringify(commentData)
     })
   },
 
-  async deleteComment(commentId) {
-    return await apiRequest(`/comments/${commentId}`, {
+  async getComments(postId) {
+    return await apiRequest(`/posts/${postId}/comments`)
+  },
+
+  async deleteComment(postId, commentId) {
+    return await apiRequest(`/posts/${postId}/comments/${commentId}`, {
       method: 'DELETE'
     })
   }

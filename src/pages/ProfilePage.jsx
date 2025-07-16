@@ -361,7 +361,7 @@ function ProfilePage() {
                   <FileText className="w-16 h-16 mx-auto text-slate-300 mb-4" />
                   <h3 className="text-lg font-medium text-slate-900 mb-2">No posts yet</h3>
                   <p className="text-slate-600 mb-6">Start sharing your thoughts with the community!</p>
-                  <Link to="/create-post" className="btn-primary">
+                  <Link to="/create" className="btn-primary">
                     Create Your First Post
                   </Link>
                 </div>
