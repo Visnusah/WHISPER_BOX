@@ -1,0 +1,48 @@
+{
+  "name": "whisper-box-backend",
+  "version": "1.0.0",
+  "description": "Backend for Whisper Box social media platform",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.3.1",
+    "@react-email/render": "^1.1.3",
+    "@types/nodemailer": "^6.4.17",
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^7.0.5",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "react-email": "^4.1.3",
+    "sequelize": "^6.35.2",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "sequelize-cli": "^6.6.2"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "sequelize",
+    "postgresql",
+    "social-media",
+    "api"
+  ],
+  "author": "WHISPER_BOX Team",
+  "license": "MIT"
+}
