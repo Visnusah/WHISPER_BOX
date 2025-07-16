@@ -27,7 +27,23 @@ import { errorHandler, notFound } from './middleware/errorHandler.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001; // Set default to 5001 to match current setup
+
+// CORS configuration
+const corsOptions = {
+  origin: [
+    'http://localhost:5173', 
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://localhost:5174',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+};
 
 // Rate limiting
 const limiter = rateLimit({
@@ -53,59 +69,37 @@ app.use(compression()); // Gzip compression
 app.use(limiter); // Rate limiting
 app.use(morgan('combined')); // HTTP request logger
 
+// Apply CORS globally
+app.use(cors(corsOptions));
+
+// Apply CORS globally
+app.use(cors(corsOptions));
+
 // Debug CORS requests
 app.use((req, res, next) => {
   console.log(`📡 ${req.method} ${req.path} from origin: ${req.headers.origin}`);
   next();
 });
 
-// Handle preflight requests for all routes
-app.options('*', cors({
-  origin: [
-    'http://localhost:5173', 
-    'http://localhost:3000',
-    'http://127.0.0.1:5173',
-    'http://localhost:5174',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-}));
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
-app.use(cors({
-  origin: [
-    'http://localhost:5173', 
-    'http://localhost:3000',
-    'http://127.0.0.1:5173',
-    'http://localhost:5174',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
-}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Serve static files for uploads with CORS headers
 // Serve static files for uploads with specific CORS
-app.use('/uploads', cors({
-  origin: [
-    'http://localhost:5173', 
-    'http://localhost:3000',
-    'http://127.0.0.1:5173',
-    'http://localhost:5174',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
-  credentials: false,
-  methods: ['GET', 'HEAD'],
-  allowedHeaders: ['Content-Type', 'Cache-Control'],
-}), (req, res, next) => {
-  // Add additional headers for cross-origin images
+app.use('/uploads', (req, res, next) => {
+  // Add specific headers for static files
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD');
+  res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
   next();
 }, express.static('uploads', {
   maxAge: '1d', // Cache for 1 day
