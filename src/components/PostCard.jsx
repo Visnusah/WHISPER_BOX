@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { getImageUrl } from '../config/api'
-import { voteOnPost, removeVoteFromPost, savePost, unsavePost } from '../services/api'
+import { voteOnPost, removeVoteFromPost, savePost, unsavePost, postsAPI } from '../services/api'
 import { ChevronUp, ChevronDown, MessageCircle, Bookmark, Share2, Trash2, MoreHorizontal } from 'lucide-react'
 import CommentsModal from './CommentsModal'
 
@@ -50,10 +50,16 @@ function PostCard({ post, onDelete, onUpdate }) {
     addToast('Link copied to clipboard!', 'success')
   }
 
-  const handleDelete = () => {
-    onDelete(post.id)
-    setShowDeleteConfirm(false)
-    addToast('Post deleted successfully!', 'success')
+  const handleDelete = async () => {
+    try {
+      await postsAPI.deletePost(post.id)
+      if (onDelete) onDelete(post.id)
+      setShowDeleteConfirm(false)
+      addToast('Post deleted successfully!', 'success')
+    } catch (error) {
+      addToast(error.message || 'Failed to delete post', 'error')
+      setShowDeleteConfirm(false)
+    }
   }
 
   const handleVote = async (voteType) => {

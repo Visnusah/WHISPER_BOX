@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { getImageUrl } from '../config/api'
+import { postsAPI } from '../services/api'
 import Navbar from '../components/Navbar'
-import { Upload, AlertCircle } from 'lucide-react'
+import PostCard from '../components/PostCard'
+import { Upload, AlertCircle, FileText, Heart, MessageCircle } from 'lucide-react'
 
 function ProfilePage() {
   const { user, updateProfile, uploadProfileImage, logout } = useAuth()
@@ -14,6 +17,53 @@ function ProfilePage() {
     bio: user?.bio || ''
   })
   const [isUploading, setIsUploading] = useState(false)
+  const [userPosts, setUserPosts] = useState([])
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true)
+  const [activeTab, setActiveTab] = useState('profile') // 'profile' or 'posts'
+
+  // Fetch user's posts
+  useEffect(() => {
+    const fetchUserPosts = async () => {
+      try {
+        setIsLoadingPosts(true)
+        const response = await postsAPI.getAllPosts()
+        if (response.success) {
+          // Filter posts by current user
+          const myPosts = response.data.posts.filter(post => post.author.id === user.id)
+          setUserPosts(myPosts)
+        }
+      } catch (error) {
+        console.error('Error fetching user posts:', error)
+        addToast('Failed to load your posts', 'error')
+      } finally {
+        setIsLoadingPosts(false)
+      }
+    }
+
+    if (user?.id) {
+      fetchUserPosts()
+    }
+  }, [user?.id, addToast])
+
+  const handlePostDelete = (postId) => {
+    setUserPosts(prevPosts => prevPosts.filter(post => post.id !== postId))
+  }
+
+  const handlePostUpdate = () => {
+    // Refresh posts after update
+    const fetchUserPosts = async () => {
+      try {
+        const response = await postsAPI.getAllPosts()
+        if (response.success) {
+          const myPosts = response.data.posts.filter(post => post.author.id === user.id)
+          setUserPosts(myPosts)
+        }
+      } catch (error) {
+        console.error('Error refreshing posts:', error)
+      }
+    }
+    fetchUserPosts()
+  }
 
   const handleProfileChange = (e) => {
     setProfileData({
@@ -93,12 +143,42 @@ function ProfilePage() {
           )}
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="md:col-span-2">
-            <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">
-                Profile Information
-              </h2>
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <div className="flex space-x-1 bg-white p-1 rounded-lg shadow-sm border border-slate-200">
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`flex-1 flex items-center justify-center px-4 py-3 rounded-md font-medium transition-all duration-200 ${
+                activeTab === 'profile'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Profile Settings
+            </button>
+            <button
+              onClick={() => setActiveTab('posts')}
+              className={`flex-1 flex items-center justify-center px-4 py-3 rounded-md font-medium transition-all duration-200 ${
+                activeTab === 'posts'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              My Posts ({userPosts.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Profile Settings Tab */}
+        {activeTab === 'profile' && (
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="md:col-span-2">
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+                <h2 className="text-xl font-semibold text-slate-900 mb-6">
+                  Profile Information
+                </h2>
               
               <form onSubmit={handleProfileSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
@@ -248,6 +328,58 @@ function ProfilePage() {
             </div>
           </div>
         </div>
+        )}
+
+        {/* My Posts Tab */}
+        {activeTab === 'posts' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-slate-900">My Posts</h2>
+                <div className="flex items-center space-x-4 text-sm text-slate-600">
+                  <div className="flex items-center space-x-1">
+                    <FileText className="w-4 h-4" />
+                    <span>{userPosts.length} posts</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Heart className="w-4 h-4" />
+                    <span>{userPosts.reduce((total, post) => total + (post.votes || 0), 0)} votes</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <MessageCircle className="w-4 h-4" />
+                    <span>{userPosts.reduce((total, post) => total + (post.comments?.length || 0), 0)} comments</span>
+                  </div>
+                </div>
+              </div>
+
+              {isLoadingPosts ? (
+                <div className="flex justify-center py-12">
+                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                </div>
+              ) : userPosts.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No posts yet</h3>
+                  <p className="text-slate-600 mb-6">Start sharing your thoughts with the community!</p>
+                  <Link to="/create-post" className="btn-primary">
+                    Create Your First Post
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {userPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onDelete={handlePostDelete}
+                      onUpdate={handlePostUpdate}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
