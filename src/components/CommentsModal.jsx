@@ -1,37 +1,63 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { getImageUrl } from '../config/api'
+import { commentsAPI } from '../services/api'
 import { X, Trash2 } from 'lucide-react'
 
 function CommentsModal({ post, onClose }) {
   const { user } = useAuth()
   const { addToast } = useToast()
-  const [comments, setComments] = useState(post.comments)
+  const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
 
-  const handleAddComment = (e) => {
+  // Load comments when modal opens
+  useEffect(() => {
+    const loadComments = async () => {
+      try {
+        setIsLoading(true)
+        const response = await commentsAPI.getComments(post.id)
+        if (response.success) {
+          setComments(response.data.comments || [])
+        }
+      } catch (error) {
+        console.error('Error loading comments:', error)
+        setComments(post.comments || []) // Fallback to passed comments
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadComments()
+  }, [post.id, post.comments])
+
+  const handleAddComment = async (e) => {
     e.preventDefault()
     if (!newComment.trim()) return
 
-    const comment = {
-      id: Date.now().toString(),
-      text: newComment,
-      author: {
-        id: user.id,
-        username: user.username,
-        profileImage: user.profileImage
-      },
-      createdAt: new Date().toISOString()
+    try {
+      const response = await commentsAPI.createComment(post.id, { text: newComment.trim() })
+      
+      if (response.success) {
+        // Add the new comment to the local state
+        setComments([...comments, response.data.comment])
+        setNewComment('')
+        addToast('Comment added successfully!', 'success')
+      }
+    } catch (error) {
+      addToast(error.message || 'Failed to add comment', 'error')
     }
-
-    setComments([...comments, comment])
-    setNewComment('')
-    addToast('Comment added!', 'success')
   }
 
-  const handleDeleteComment = (commentId) => {
-    setComments(comments.filter(c => c.id !== commentId))
-    addToast('Comment deleted!', 'success')
+  const handleDeleteComment = async (commentId) => {
+    try {
+      await commentsAPI.deleteComment(post.id, commentId)
+      setComments(comments.filter(c => c.id !== commentId))
+      addToast('Comment deleted successfully!', 'success')
+    } catch (error) {
+      addToast(error.message || 'Failed to delete comment', 'error')
+    }
   }
 
   const formatDate = (dateString) => {
@@ -61,16 +87,23 @@ function CommentsModal({ post, onClose }) {
 
         {/* Comments List */}
         <div className="p-6 max-h-96 overflow-y-auto">
-          {comments.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+            </div>
+          ) : comments.length === 0 ? (
             <p className="text-gray-500 text-center py-8">No comments yet. Be the first to comment!</p>
           ) : (
             <div className="space-y-4">
               {comments.map((comment) => (
                 <div key={comment.id} className="flex items-start space-x-3">
                   <img
-                    src={comment.author.profileImage}
+                    src={getImageUrl(comment.author.profileImage)}
                     alt={comment.author.username}
                     className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                    onError={(e) => {
+                      e.target.src = '/placeholder-avatar.png'
+                    }}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
