@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { postsAPI } from '../services/api'
 import Navbar from '../components/Navbar'
 import { X, Hash, Type, FileText, Sparkles, Send } from 'lucide-react'
 
@@ -47,7 +48,7 @@ function CreatePostPage() {
     })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (!formData.title.trim() || !formData.description.trim()) {
@@ -55,20 +56,19 @@ function CreatePostPage() {
       return
     }
 
-    // In a real app, this would be an API call
-    const newPost = {
-      id: Date.now().toString(),
-      ...formData,
-      author: user,
-      createdAt: new Date().toISOString(),
-      votes: 0,
-      userVote: null,
-      isSaved: false,
-      comments: []
-    }
+    try {
+      await postsAPI.createPost({
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        hashtags: formData.hashtags
+      })
 
-    addToast('Post created successfully!', 'success')
-    navigate('/home')
+      addToast('Post created successfully!', 'success')
+      navigate('/home')
+    } catch (error) {
+      console.error('Error creating post:', error)
+      addToast(error.message || 'Failed to create post', 'error')
+    }
   }
 
   const suggestedTags = ['thoughts', 'inspiration', 'life', 'technology', 'creativity', 'discussion']

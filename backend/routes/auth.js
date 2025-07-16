@@ -10,10 +10,12 @@ import {
   changePassword, 
   getProfile, 
   updateProfile, 
+  uploadProfilePicture,
   logout, 
   getMe 
 } from '../controllers/authController.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { uploadProfileImage } from '../middleware/upload.js';
 import { 
   validateSignup, 
   validateLogin, 
@@ -38,6 +40,7 @@ router.post('/reset-password/:token', validateResetPassword, resetPassword);
 router.get('/me', authenticateToken, getMe);
 router.get('/profile', authenticateToken, getProfile);
 router.put('/profile', authenticateToken, validateUpdateProfile, updateProfile);
+router.post('/upload-profile-picture', authenticateToken, uploadProfileImage.single('profileImage'), uploadProfilePicture);
 router.post('/change-password', authenticateToken, validateChangePassword, changePassword);
 router.post('/logout', authenticateToken, logout);
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { mockPosts } from '../data/mockData'
+import { postsAPI } from '../services/api'
 import Navbar from '../components/Navbar'
 import PostCard from '../components/PostCard'
 import { Search, Filter, Sparkles, TrendingUp, Clock, Star } from 'lucide-react'
@@ -12,16 +12,27 @@ function HomePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('newest')
   const [filterTag, setFilterTag] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
+  // Load posts from API
   useEffect(() => {
-    // Initialize posts with user-specific data
-    const userPosts = mockPosts.map(post => ({
-      ...post,
-      isSaved: false,
-      userVote: null
-    }))
-    setPosts(userPosts)
-    setFilteredPosts(userPosts)
+    const loadPosts = async () => {
+      try {
+        setLoading(true)
+        const postsData = await postsAPI.getAllPosts()
+        setPosts(postsData)
+        setFilteredPosts(postsData)
+        setError(null)
+      } catch (err) {
+        console.error('Error loading posts:', err)
+        setError('Failed to load posts')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadPosts()
   }, [])
 
   useEffect(() => {
@@ -227,7 +238,26 @@ function HomePage() {
 
         {/* Posts */}
         <div className="space-y-6">
-          {filteredPosts.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+              <span className="ml-3 text-text-600">Loading posts...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-red-500 text-2xl">⚠️</span>
+              </div>
+              <h3 className="text-lg font-semibold text-text-800 mb-2">Failed to Load Posts</h3>
+              <p className="text-text-600 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="btn-primary inline-flex items-center justify-center"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : filteredPosts.length === 0 ? (
             <div className="text-center py-16 animate-fade-in">
               <div className="w-24 h-24 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
                 <Sparkles className="w-12 h-12 text-primary-600" />

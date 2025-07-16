@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { mockPosts } from '../data/mockData'
+import { postsAPI } from '../services/api'
 import Navbar from '../components/Navbar'
 import PostCard from '../components/PostCard'
 import { TrendingUp, ArrowLeft } from 'lucide-react'
@@ -7,19 +7,32 @@ import { Link } from 'react-router-dom'
 
 function TrendingPage() {
   const [trendingPosts, setTrendingPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Simulate trending posts by sorting by votes
-    const trending = [...mockPosts]
-      .sort((a, b) => b.votes - a.votes)
-      .slice(0, 3) // Show top 3 trending
-      .map(post => ({
-        ...post,
-        isSaved: false,
-        userVote: null
-      }))
-    
-    setTrendingPosts(trending)
+    const loadTrendingPosts = async () => {
+      try {
+        setLoading(true)
+        let posts = await postsAPI.getTrendingPosts()
+        
+        // If trending endpoint doesn't exist, fallback to all posts sorted by votes
+        if (!posts || posts.length === 0) {
+          const allPosts = await postsAPI.getAllPosts()
+          posts = allPosts.sort((a, b) => b.votes - a.votes).slice(0, 10)
+        }
+        
+        setTrendingPosts(posts)
+        setError(null)
+      } catch (err) {
+        console.error('Error loading trending posts:', err)
+        setError('Failed to load trending posts')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadTrendingPosts()
   }, [])
 
   const handleDeletePost = (postId) => {
@@ -110,7 +123,26 @@ function TrendingPage() {
 
         {/* Trending Posts */}
         <div className="space-y-6">
-          {trendingPosts.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+              <span className="ml-3 text-text-600">Loading trending posts...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-red-500 text-2xl">⚠️</span>
+              </div>
+              <h3 className="text-lg font-semibold text-text-800 mb-2">Failed to Load Trending Posts</h3>
+              <p className="text-text-600 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="btn-primary inline-flex items-center justify-center"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : trendingPosts.length === 0 ? (
             <div className="text-center py-16">
               <TrendingUp className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-slate-600 mb-2">

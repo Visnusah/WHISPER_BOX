@@ -111,3 +111,10 @@ export const validateResetPassword = [
     .withMessage('Password must be at least 6 characters long'),
   handleValidationErrors
 ];
+
+export const validateVote = [
+  body('voteType')
+    .isIn(['up', 'down'])
+    .withMessage('Vote type must be either "up" or "down"'),
+  handleValidationErrors
+];

@@ -2,16 +2,25 @@
 // This replaces database connection for frontend-only apps
 
 const API_CONFIG = {
-  // If you add a backend later, change this to your server URL
+  // Backend server URL - updated to use real backend
   BASE_URL: process.env.NODE_ENV === 'production' 
     ? 'https://your-backend-url.com/api' 
-    : 'http://localhost:5000/api',
+    : 'http://localhost:5001/api',
+  
+  // Static files URL for images
+  STATIC_URL: process.env.NODE_ENV === 'production' 
+    ? 'https://your-backend-url.com' 
+    : 'http://localhost:5001',
   
   // Timeout for API requests
-  TIMEOUT: 10000,
-  
-  // Mock mode - set to false when you have a real backend
-  USE_MOCK_DATA: true
+  TIMEOUT: 10000
+}
+
+// Helper function to get full image URL
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return '/placeholder-avatar.png'
+  if (imagePath.startsWith('http')) return imagePath
+  return `${API_CONFIG.STATIC_URL}${imagePath}`
 }
 
 // API endpoints
@@ -20,7 +29,15 @@ export const ENDPOINTS = {
     LOGIN: '/auth/login',
     SIGNUP: '/auth/signup',
     LOGOUT: '/auth/logout',
-    RESET_PASSWORD: '/auth/reset-password'
+    VERIFY_EMAIL: (token) => `/auth/verify-email/${token}`,
+    RESEND_VERIFICATION: '/auth/resend-verification',
+    REFRESH_TOKEN: '/auth/refresh-token',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: (token) => `/auth/reset-password/${token}`,
+    CHANGE_PASSWORD: '/auth/change-password',
+    GET_ME: '/auth/me',
+    GET_PROFILE: '/auth/profile',
+    UPDATE_PROFILE: '/auth/profile'
   },
   USERS: {
     GET_ALL: '/users',
@@ -44,4 +61,5 @@ export const ENDPOINTS = {
   }
 }
 
+export { API_CONFIG }
 export default API_CONFIG

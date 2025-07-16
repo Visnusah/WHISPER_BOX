@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { mockPosts } from '../data/mockData'
+import { savedPostsAPI } from '../services/api'
 import Navbar from '../components/Navbar'
 import PostCard from '../components/PostCard'
 import { Bookmark } from 'lucide-react'
@@ -8,16 +8,25 @@ import { Bookmark } from 'lucide-react'
 function SavedPostsPage() {
   const { user } = useAuth()
   const [savedPosts, setSavedPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // In a real app, this would fetch saved posts from an API
-    // For now, we'll simulate some saved posts
-    const simulatedSavedPosts = mockPosts.slice(0, 2).map(post => ({
-      ...post,
-      isSaved: true,
-      userVote: null
-    }))
-    setSavedPosts(simulatedSavedPosts)
+    const loadSavedPosts = async () => {
+      try {
+        setLoading(true)
+        const posts = await savedPostsAPI.getSavedPosts()
+        setSavedPosts(posts)
+        setError(null)
+      } catch (err) {
+        console.error('Error loading saved posts:', err)
+        setError('Failed to load saved posts')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSavedPosts()
   }, [])
 
   const handleDeletePost = (postId) => {
@@ -80,7 +89,26 @@ function SavedPostsPage() {
 
         {/* Saved Posts */}
         <div className="space-y-6">
-          {savedPosts.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+              <span className="ml-3 text-text-600">Loading saved posts...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-red-500 text-2xl">⚠️</span>
+              </div>
+              <h3 className="text-lg font-semibold text-text-800 mb-2">Failed to Load Saved Posts</h3>
+              <p className="text-text-600 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="btn-primary inline-flex items-center justify-center"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : savedPosts.length === 0 ? (
             <div className="text-center py-16">
               <Bookmark className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-600 mb-2">

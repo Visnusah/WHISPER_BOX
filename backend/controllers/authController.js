@@ -4,6 +4,7 @@ import { Op } from 'sequelize';
 import { User } from '../models/index.js';
 import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService.js';
 import { generateTokens, verifyToken, generateEmailVerificationToken, generatePasswordResetToken } from '../utils/jwtUtils.js';
+import { deleteOldProfileImage, getImageUrl } from '../middleware/upload.js';
 
 // User Registration with Email Verification
 export const signup = async (req, res) => {
@@ -620,6 +621,52 @@ export const getMe = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get user data',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Upload Profile Picture
+export const uploadProfilePicture = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image file provided'
+      });
+    }
+
+    const user = await User.findByPk(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Delete old profile image if it exists
+    if (user.profileImage) {
+      deleteOldProfileImage(user.profileImage);
+    }
+
+    // Update user with new profile image path
+    const profileImagePath = `/uploads/profile-images/${req.file.filename}`;
+    await user.update({ profileImage: profileImagePath });
+
+    res.json({
+      success: true,
+      message: 'Profile picture updated successfully',
+      data: {
+        profileImage: profileImagePath,
+        user: user.toSafeObject()
+      }
+    });
+  } catch (error) {
+    console.error('Upload profile picture error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload profile picture',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

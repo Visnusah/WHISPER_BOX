@@ -1,19 +1,48 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
-import { ChevronUp, ChevronDown, MessageCircle, Bookmark, Share2, Trash2, Heart, MoreHorizontal } from 'lucide-react'
+import { getImageUrl } from '../config/api'
+import { voteOnPost, removeVoteFromPost, savePost, unsavePost } from '../services/api'
+import { ChevronUp, ChevronDown, MessageCircle, Bookmark, Share2, Trash2, MoreHorizontal } from 'lucide-react'
 import CommentsModal from './CommentsModal'
 
-function PostCard({ post, onDelete, onSave, onVote }) {
+function PostCard({ post, onDelete, onUpdate }) {
   const { user } = useAuth()
   const { addToast } = useToast()
   const [showComments, setShowComments] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [isLiked, setIsLiked] = useState(false)
+  const [isVoting, setIsVoting] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [postState, setPostState] = useState({
+    votes: post.votes || 0,
+    userVote: post.userVote || null,
+    isSaved: post.isSaved || false
+  })
 
-  const handleSave = () => {
-    onSave(post.id)
-    addToast(`Post ${post.isSaved ? 'removed from' : 'added to'} saved posts!`, 'success')
+  const handleSave = async () => {
+    if (!user) {
+      addToast('Please log in to save posts', 'error')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      if (postState.isSaved) {
+        await unsavePost(post.id)
+        setPostState(prev => ({ ...prev, isSaved: false }))
+        addToast('Post removed from saved posts!', 'success')
+      } else {
+        await savePost(post.id)
+        setPostState(prev => ({ ...prev, isSaved: true }))
+        addToast('Post saved successfully!', 'success')
+      }
+      
+      if (onUpdate) onUpdate()
+    } catch (error) {
+      addToast(error.message || 'Failed to save post', 'error')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleShare = () => {
@@ -27,13 +56,53 @@ function PostCard({ post, onDelete, onSave, onVote }) {
     addToast('Post deleted successfully!', 'success')
   }
 
-  const handleVote = (type) => {
-    onVote(post.id, type)
-  }
+  const handleVote = async (voteType) => {
+    if (!user) {
+      addToast('Please log in to vote', 'error')
+      return
+    }
 
-  const handleLike = () => {
-    setIsLiked(!isLiked)
-    addToast(isLiked ? 'Removed like' : 'Post liked!', 'success')
+    setIsVoting(true)
+    try {
+      let response
+      
+      // If clicking the same vote type, remove the vote
+      if (postState.userVote === voteType) {
+        response = await removeVoteFromPost(post.id)
+        setPostState(prev => ({
+          ...prev,
+          userVote: null,
+          votes: prev.votes + (voteType === 'up' ? -1 : 1)
+        }))
+        addToast('Vote removed', 'success')
+      } else {
+        // Otherwise, vote
+        response = await voteOnPost(post.id, voteType)
+        
+        let voteChange = 0
+        if (postState.userVote === null) {
+          // New vote
+          voteChange = voteType === 'up' ? 1 : -1
+        } else {
+          // Changing vote
+          voteChange = voteType === 'up' ? 2 : -2
+        }
+        
+        setPostState(prev => ({
+          ...prev,
+          userVote: voteType,
+          votes: prev.votes + voteChange
+        }))
+        
+        addToast(`${voteType === 'up' ? 'Upvoted' : 'Downvoted'} successfully!`, 'success')
+      }
+      
+      if (onUpdate) onUpdate()
+    } catch (error) {
+      addToast(error.message || 'Failed to vote', 'error')
+    } finally {
+      setIsVoting(false)
+    }
   }
 
   const formatDate = (dateString) => {
@@ -52,9 +121,12 @@ function PostCard({ post, onDelete, onSave, onVote }) {
           <div className="flex items-center space-x-4">
             <div className="relative">
               <img
-                src={post.author.profileImage}
-                alt={post.author.username}
+                src={getImageUrl(post.author?.profileImage)}
+                alt={post.author?.username || 'User'}
                 className="w-12 h-12 profile-avatar"
+                onError={(e) => {
+                  e.target.src = '/placeholder-avatar.png'
+                }}
               />
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
             </div>
@@ -114,17 +186,19 @@ function PostCard({ post, onDelete, onSave, onVote }) {
             <div className="flex items-center space-x-1 bg-background-50 rounded-2xl p-1">
               <button
                 onClick={() => handleVote('up')}
-                className={`vote-button ${post.userVote === 'up' ? 'upvoted' : ''}`}
+                disabled={isVoting}
+                className={`vote-button ${postState.userVote === 'up' ? 'upvoted' : ''} ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title="Upvote"
               >
                 <ChevronUp className="w-5 h-5" />
               </button>
               <span className="text-sm font-bold text-text-700 px-3 min-w-[2rem] text-center">
-                {post.votes}
+                {postState.votes}
               </span>
               <button
                 onClick={() => handleVote('down')}
-                className={`vote-button ${post.userVote === 'down' ? 'downvoted' : ''}`}
+                disabled={isVoting}
+                className={`vote-button ${postState.userVote === 'down' ? 'downvoted' : ''} ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title="Downvote"
               >
                 <ChevronDown className="w-5 h-5" />
@@ -138,23 +212,7 @@ function PostCard({ post, onDelete, onSave, onVote }) {
               title="View comments"
             >
               <MessageCircle className="w-5 h-5" />
-              <span className="text-sm font-medium">{post.comments.length}</span>
-            </button>
-
-            {/* Like */}
-            <button
-              onClick={handleLike}
-              className={`flex items-center space-x-2 action-button transition-all duration-300 ${
-                isLiked 
-                  ? 'text-red-500 hover:text-red-600' 
-                  : 'hover:bg-red-50 hover:text-red-500'
-              }`}
-              title={isLiked ? 'Unlike' : 'Like'}
-            >
-              <Heart className={`w-5 h-5 transition-all duration-300 ${isLiked ? 'fill-current scale-110' : ''}`} />
-              <span className="text-sm font-medium">
-                {isLiked ? '1' : '0'}
-              </span>
+              <span className="text-sm font-medium">{post.comments?.length || 0}</span>
             </button>
           </div>
 
@@ -162,14 +220,19 @@ function PostCard({ post, onDelete, onSave, onVote }) {
             {/* Save */}
             <button
               onClick={handleSave}
+              disabled={isSaving}
               className={`action-button transition-all duration-300 ${
-                post.isSaved 
+                postState.isSaved 
                   ? 'bg-accent-100 text-accent-600 shadow-soft' 
                   : 'hover:bg-accent-50 hover:text-accent-600'
-              }`}
-              title={post.isSaved ? 'Unsave post' : 'Save post'}
+              } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={postState.isSaved ? 'Unsave post' : 'Save post'}
             >
-              <Bookmark className={`w-5 h-5 transition-all duration-300 ${post.isSaved ? 'fill-current' : ''}`} />
+              {isSaving ? (
+                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <Bookmark className={`w-5 h-5 transition-all duration-300 ${postState.isSaved ? 'fill-current' : ''}`} />
+              )}
             </button>
 
             {/* Share */}

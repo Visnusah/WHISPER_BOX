@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { getImageUrl } from '../config/api'
 import Navbar from '../components/Navbar'
 import { Upload, AlertCircle } from 'lucide-react'
 
 function ProfilePage() {
-  const { user, updateProfile, logout } = useAuth()
+  const { user, updateProfile, uploadProfileImage, logout } = useAuth()
   const { addToast } = useToast()
   const [profileData, setProfileData] = useState({
-    username: user.username,
-    fullName: user.fullName || '',
-    bio: user.bio || ''
+    username: user?.username || '',
+    fullName: user?.fullName || '',
+    bio: user?.bio || ''
   })
+  const [isUploading, setIsUploading] = useState(false)
 
   const handleProfileChange = (e) => {
     setProfileData({
@@ -20,16 +22,41 @@ function ProfilePage() {
     })
   }
 
-  const handleProfileSubmit = (e) => {
+  const handleProfileSubmit = async (e) => {
     e.preventDefault()
-    updateProfile(profileData)
-    addToast('Profile updated successfully!', 'success')
+    try {
+      await updateProfile(profileData)
+      addToast('Profile updated successfully!', 'success')
+    } catch (error) {
+      addToast(error.message || 'Failed to update profile', 'error')
+    }
   }
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0]
-    if (file) {
-      addToast('Profile picture updated!', 'success')
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      addToast('Please upload a valid image file (JPEG, PNG, GIF, or WebP)', 'error')
+      return
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      addToast('Image size must be less than 5MB', 'error')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      await uploadProfileImage(file)
+      addToast('Profile picture updated successfully!', 'success')
+    } catch (error) {
+      addToast(error.message || 'Failed to upload profile picture', 'error')
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -137,24 +164,36 @@ function ProfilePage() {
               <div className="flex flex-col items-center space-y-4">
                 <div className="relative">
                   <img
-                    src={user.profileImage}
-                    alt={user.username}
+                    src={getImageUrl(user?.profileImage)}
+                    alt={user?.username || 'User'}
                     className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                    onError={(e) => {
+                      e.target.src = '/placeholder-avatar.png'
+                    }}
                   />
-                  <label className="absolute bottom-0 right-0 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition-colors">
+                  <label className={`absolute bottom-0 right-0 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition-colors ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                     <Upload className="w-4 h-4 text-white" />
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleImageUpload}
+                      disabled={isUploading}
                       className="hidden"
                     />
                   </label>
+                  {isUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="text-center">
                   <p className="text-sm text-slate-600">
-                    Click the upload button to change your profile picture
+                    {isUploading ? 'Uploading...' : 'Click the upload button to change your profile picture'}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Supported formats: JPEG, PNG, GIF, WebP (Max: 5MB)
                   </p>
                 </div>
               </div>

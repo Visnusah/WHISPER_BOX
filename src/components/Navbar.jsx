@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { getImageUrl } from '../config/api'
 import { Home, User, Bookmark, TrendingUp, Plus, LogOut, Sparkles, Settings } from 'lucide-react'
 
 function Navbar() {
@@ -69,7 +70,7 @@ function Navbar() {
             <div className="flex items-center space-x-3 ml-4 pl-4 border-l border-background-200">
               <div className="relative group">
                 <img
-                  src={user.profileImage}
+                  src={getImageUrl(user.profileImage)}
                   alt={user.username}
                   className="w-9 h-9 profile-avatar"
                 />

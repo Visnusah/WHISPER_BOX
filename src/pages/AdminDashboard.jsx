@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
+import { usersAPI, postsAPI } from '../services/api'
 import { 
   Users, 
   FileText, 
@@ -15,23 +16,45 @@ import {
   Sun,
   LogOut
 } from 'lucide-react'
-import { mockUsers, mockPosts } from '../data/mockData'
 
 function AdminDashboard() {
   const { user, logout } = useAuth()
   const { addToast } = useToast()
   const navigate = useNavigate()
   const [activeSection, setActiveSection] = useState('overview')
-  const [users, setUsers] = useState(mockUsers)
-  const [posts, setPosts] = useState(mockPosts)
+  const [users, setUsers] = useState([])
+  const [posts, setPosts] = useState([])
   const [selectedPost, setSelectedPost] = useState(null)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const handleLogout = () => {
     logout()
     addToast('Logged out successfully', 'success')
     navigate('/')
   }
+
+  // Load admin data
+  useEffect(() => {
+    const loadAdminData = async () => {
+      try {
+        setLoading(true)
+        const [usersData, postsData] = await Promise.all([
+          usersAPI.getAllUsers(),
+          postsAPI.getAllPosts()
+        ])
+        setUsers(usersData)
+        setPosts(postsData)
+      } catch (error) {
+        console.error('Error loading admin data:', error)
+        addToast('Failed to load admin data', 'error')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadAdminData()
+  }, [addToast])
 
   // Calculate stats
   const totalUsers = users.length
