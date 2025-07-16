@@ -227,7 +227,10 @@ export const authAPI = {
 export const postsAPI = {
   async getAllPosts() {
     const response = await apiRequest('/posts')
-    return response.data?.posts || []
+    if (response.success && response.data && response.data.posts) {
+      return response.data.posts // Return just the posts array for backward compatibility
+    }
+    return [] // Return empty array if no posts or error
   },
 
   async getTrendingPosts() {
