@@ -66,13 +66,19 @@ const corsOptions = {
   preflightContinue: false // Pass control to the next handler
 };
 
-// Rate limiting
+// Rate limiting - increased limits for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 1000, // Increased from 100 to 1000 requests per windowMs for development
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skip: (req) => {
+    // Skip rate limiting for development environment
+    return process.env.NODE_ENV === 'development'
   }
 });
 
