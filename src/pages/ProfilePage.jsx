@@ -26,13 +26,10 @@ function ProfilePage() {
     const fetchUserPosts = async () => {
       try {
         setIsLoadingPosts(true)
-        console.log('Fetching posts for user:', user?.id, user?.username)
         const postsData = await postsAPI.getAllPosts()
-        console.log('Posts API response:', postsData)
         if (Array.isArray(postsData)) {
           // Filter posts by current user
           const myPosts = postsData.filter(post => post.author && post.author.id === user.id)
-          console.log('My posts found:', myPosts.length, myPosts)
           setUserPosts(myPosts)
         } else {
           console.error('Posts data is not an array:', postsData)

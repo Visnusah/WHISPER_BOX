@@ -26,8 +26,13 @@ function SavedPostsPage() {
       }
     }
 
-    loadSavedPosts()
-  }, [])
+    if (user) { // Only load if user is authenticated
+      loadSavedPosts()
+    } else {
+      setLoading(false)
+      setSavedPosts([])
+    }
+  }, [user]) // Re-fetch when user authentication changes
 
   const handleDeletePost = (postId) => {
     setSavedPosts(savedPosts.filter(post => post.id !== postId))

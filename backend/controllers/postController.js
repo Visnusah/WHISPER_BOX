@@ -379,6 +379,19 @@ export const getTrendingPosts = async (req, res) => {
           model: User,
           as: 'author',
           attributes: ['id', 'username', 'fullName', 'profileImage']
+        },
+        {
+          model: Comment,
+          as: 'comments',
+          where: { isActive: true },
+          required: false,
+          include: [
+            {
+              model: User,
+              as: 'author',
+              attributes: ['id', 'username', 'fullName', 'profileImage']
+            }
+          ]
         }
       ],
       order: [
@@ -388,9 +401,36 @@ export const getTrendingPosts = async (req, res) => {
       limit: parseInt(limit)
     });
 
+    // Add user-specific data if authenticated (same as getAllPosts)
+    const postsWithUserData = await Promise.all(
+      posts.map(async (post) => {
+        const postData = post.toJSON();
+        
+        if (req.user) {
+          // Check if user has voted
+          const userVote = await Vote.findOne({
+            where: { postId: post.id, userId: req.user.id }
+          });
+          
+          // Check if user has saved this post
+          const isSaved = await SavedPost.findOne({
+            where: { postId: post.id, userId: req.user.id }
+          });
+
+          postData.userVote = userVote ? userVote.voteType : null;
+          postData.isSaved = !!isSaved;
+        } else {
+          postData.userVote = null;
+          postData.isSaved = false;
+        }
+
+        return postData;
+      })
+    );
+
     res.json({
       success: true,
-      data: { posts }
+      data: { posts: postsWithUserData }
     });
   } catch (error) {
     console.error('Get trending posts error:', error);

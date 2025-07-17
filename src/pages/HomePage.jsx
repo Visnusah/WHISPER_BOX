@@ -33,7 +33,7 @@ function HomePage() {
     }
 
     loadPosts()
-  }, [])
+  }, [user]) // Re-fetch when user authentication changes
 
   useEffect(() => {
     let filtered = [...posts]

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import { postsAPI } from '../services/api'
 import Navbar from '../components/Navbar'
 import PostCard from '../components/PostCard'
@@ -6,6 +7,7 @@ import { TrendingUp, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 function TrendingPage() {
+  const { user } = useAuth()
   const [trendingPosts, setTrendingPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -33,7 +35,7 @@ function TrendingPage() {
     }
 
     loadTrendingPosts()
-  }, [])
+  }, [user]) // Re-fetch when user authentication changes
 
   const handleDeletePost = (postId) => {
     setTrendingPosts(trendingPosts.filter(post => post.id !== postId))

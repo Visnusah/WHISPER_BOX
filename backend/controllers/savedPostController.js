@@ -1,4 +1,4 @@
-import { SavedPost, Post, User } from '../models/index.js';
+import { SavedPost, Post, User, Vote } from '../models/index.js';
 
 export const getSavedPosts = async (req, res) => {
   try {
@@ -26,11 +26,22 @@ export const getSavedPosts = async (req, res) => {
       offset: parseInt(offset)
     });
 
-    const posts = savedPosts.rows.map(savedPost => ({
-      ...savedPost.post.toJSON(),
-      isSaved: true,
-      userVote: null // You might want to fetch this separately
-    }));
+    const posts = await Promise.all(
+      savedPosts.rows.map(async (savedPost) => {
+        const postData = savedPost.post.toJSON();
+        
+        // Check if user has voted on this post
+        const userVote = await Vote.findOne({
+          where: { postId: postData.id, userId: req.user.id }
+        });
+        
+        return {
+          ...postData,
+          isSaved: true, // Always true for saved posts
+          userVote: userVote ? userVote.voteType : null
+        };
+      })
+    );
 
     res.json({
       success: true,
