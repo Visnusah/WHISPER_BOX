@@ -51,8 +51,15 @@ function ProfilePage() {
     }
   }, [user?.id, addToast])
 
-  const handlePostDelete = (postId) => {
-    setUserPosts(prevPosts => prevPosts.filter(post => post.id !== postId))
+  const handlePostDelete = async (postId) => {
+    try {
+      await postsAPI.deletePost(postId)
+      setUserPosts(prevPosts => prevPosts.filter(post => post.id !== postId))
+      addToast('Post deleted successfully!', 'success')
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      addToast('Failed to delete post', 'error')
+    }
   }
 
   const handlePostUpdate = () => {
@@ -400,13 +407,15 @@ function ProfilePage() {
             <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-slate-900">My Posts</h2>
-                <Link 
-                  to="/create" 
-                  className="btn-primary flex items-center space-x-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span>Create New Post</span>
-                </Link>
+                {userPosts.length > 0 && (
+                  <Link 
+                    to="/create" 
+                    className="btn-primary flex items-center space-x-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>Create New Post</span>
+                  </Link>
+                )}
               </div>
 
               {isLoadingPosts ? (
@@ -432,19 +441,73 @@ function ProfilePage() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="mb-4 text-sm text-slate-500">
                     Showing {userPosts.length} post{userPosts.length !== 1 ? 's' : ''} • Sorted by newest first
                   </div>
                   {userPosts
-                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by newest first
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                     .map((post) => (
-                    <div key={post.id} className="bg-slate-50 rounded-xl p-1 shadow-sm hover:shadow-md transition-shadow duration-200">
-                      <PostCard
-                        post={post}
-                        onDelete={handlePostDelete}
-                        onUpdate={handlePostUpdate}
-                      />
+                    <div key={post.id} className="bg-white border border-slate-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-md transition-all duration-200">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 cursor-pointer" onClick={() => window.open('/', '_blank')}>
+                          <h3 className="text-lg font-semibold text-slate-900 hover:text-indigo-600 transition-colors mb-2">
+                            {post.title}
+                          </h3>
+                          <p className="text-slate-600 text-sm mb-3 line-clamp-2">
+                            {post.description}
+                          </p>
+                          <div className="flex items-center space-x-4 text-xs text-slate-500">
+                            <span className="flex items-center">
+                              <Heart className="w-3 h-3 mr-1" />
+                              {post.votes || 0} votes
+                            </span>
+                            <span className="flex items-center">
+                              <MessageCircle className="w-3 h-3 mr-1" />
+                              {post.comments?.length || 0} comments
+                            </span>
+                            <span>
+                              {new Date(post.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                          {post.hashtags && post.hashtags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {post.hashtags.slice(0, 3).map((tag) => (
+                                <span key={tag} className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded">
+                                  #{tag}
+                                </span>
+                              ))}
+                              {post.hashtags.length > 3 && (
+                                <span className="text-xs text-slate-400">+{post.hashtags.length - 3} more</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-4 flex flex-col space-y-2">
+                          <button
+                            onClick={() => window.open('/', '_blank')}
+                            className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md transition-colors"
+                            title="View on homepage"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to delete this post?')) {
+                                handlePostDelete(post.id)
+                              }
+                            }}
+                            className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md transition-colors"
+                            title="Delete post"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
