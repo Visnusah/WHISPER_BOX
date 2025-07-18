@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
-import { Eye, EyeOff, Mail } from 'lucide-react'
+import { Eye, EyeOff, Mail, Loader2 } from 'lucide-react'
 
 function LoginPage() {
   const [email, setEmail] = useState('')
@@ -182,7 +182,14 @@ function LoginPage() {
                 disabled={isLoading}
                 className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
               </button>
             </form>
           )}
@@ -201,10 +208,9 @@ function LoginPage() {
           {/* Demo Account Info */}
           {!showResetForm && (
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2">Demo Accounts:</h4>
-              <div className="text-xs text-blue-800 space-y-1">
-                <p><strong>Regular User:</strong> test@example.com / password123</p>
-                <p><strong>Admin:</strong> admin@whisperbox.com / admin123</p>
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">Admin Account:</h4>
+              <div className="text-xs text-blue-800">
+                <p><strong>Admin:</strong> sahk0292@gmail.com / admin123</p>
               </div>
             </div>
           )}

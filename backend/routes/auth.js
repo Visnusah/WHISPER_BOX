@@ -12,7 +12,10 @@ import {
   updateProfile, 
   uploadProfilePicture,
   logout, 
-  getMe 
+  getMe,
+  sendOTP,
+  verifyOTP,
+  resendOTP
 } from '../controllers/authController.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { uploadProfileImage } from '../middleware/upload.js';
@@ -30,6 +33,9 @@ const router = express.Router();
 // Public routes
 router.post('/signup', validateSignup, signup);
 router.post('/login', validateLogin, login);
+router.post('/send-otp', sendOTP);
+router.post('/verify-otp', verifyOTP);
+router.post('/resend-otp', resendOTP);
 router.get('/verify-email/:token', verifyEmail);
 router.post('/resend-verification', resendVerification);
 router.post('/refresh-token', refreshToken);

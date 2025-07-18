@@ -86,6 +86,18 @@ const User = sequelize.define('User', {
   refreshToken: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  otpCode: {
+    type: DataTypes.STRING(4),
+    allowNull: true
+  },
+  otpExpires: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  otpAttempts: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   }
 }, {
   tableName: 'users',
@@ -136,6 +148,9 @@ User.prototype.toSafeObject = function() {
   delete user.passwordResetToken;
   delete user.emailVerificationExpires;
   delete user.passwordResetExpires;
+  delete user.otpCode;
+  delete user.otpExpires;
+  delete user.otpAttempts;
   return user;
 };
 

@@ -17,17 +17,13 @@ export const validateSignup = [
     .isEmail()
     .normalizeEmail()
     .withMessage('Please provide a valid email'),
-  body('username')
-    .isLength({ min: 3, max: 30 })
-    .isAlphanumeric()
-    .withMessage('Username must be 3-30 characters and contain only letters and numbers'),
+  body('fullName')
+    .isLength({ min: 2, max: 100 })
+    .trim()
+    .withMessage('Full name must be 2-100 characters long'),
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
-  body('fullName')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Full name must be less than 100 characters'),
   handleValidationErrors
 ];
 

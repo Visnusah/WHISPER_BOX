@@ -115,10 +115,10 @@ const refreshAccessToken = async () => {
 
 // Authentication API
 export const authAPI = {
-  async signup(email, password, username, fullName) {
+  async signup(email, password, fullName) {
     const response = await apiRequest('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password, username, fullName })
+      body: JSON.stringify({ email, password, fullName })
     })
     
     return response
@@ -126,6 +126,27 @@ export const authAPI = {
 
   async verifyEmail(token) {
     return await apiRequest(`/auth/verify-email/${token}`)
+  },
+
+  async sendOTP(email) {
+    return await apiRequest('/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    })
+  },
+
+  async verifyOTP(email, otpCode) {
+    return await apiRequest('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otpCode })
+    })
+  },
+
+  async resendOTP(email) {
+    return await apiRequest('/auth/resend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    })
   },
 
   async resendVerification(email) {

@@ -2,42 +2,49 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { Op } from 'sequelize';
 import { User } from '../models/index.js';
-import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService.js';
+import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail, sendOTPEmail } from '../services/emailService.js';
 import { generateTokens, verifyToken, generateEmailVerificationToken, generatePasswordResetToken } from '../utils/jwtUtils.js';
 import { deleteOldProfileImage, getImageUrl } from '../middleware/upload.js';
 
 // User Registration with Email Verification
 export const signup = async (req, res) => {
   try {
-    const { email, password, username, fullName } = req.body;
+    const { email, password, fullName } = req.body;
 
     // Validate input
-    if (!email || !password || !username) {
+    if (!email || !password || !fullName) {
       return res.status(400).json({
         success: false,
-        message: 'Email, password, and username are required'
+        message: 'Email, password, and full name are required'
       });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      where: {
-        [Op.or]: [{ email }, { username }]
-      }
+    // Generate username from full name (lowercase, remove spaces, add random number if needed)
+    let username = fullName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+    
+    // Check if email already exists
+    const existingEmailUser = await User.findOne({
+      where: { email }
     });
 
-    if (existingUser) {
-      if (existingUser.email === email) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email already registered'
-        });
-      } else {
-        return res.status(400).json({
-          success: false,
-          message: 'Username already taken'
-        });
-      }
+    if (existingEmailUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already registered'
+      });
+    }
+
+    // Check if username exists and generate unique one if needed
+    let usernameExists = await User.findOne({
+      where: { username }
+    });
+
+    while (usernameExists) {
+      // If username exists, add random number
+      username = username + Math.floor(Math.random() * 1000);
+      usernameExists = await User.findOne({
+        where: { username }
+      });
     }
 
     // Generate email verification token
@@ -49,7 +56,7 @@ export const signup = async (req, res) => {
       email,
       password,
       username,
-      fullName: fullName || username,
+      fullName,
       emailVerificationToken,
       emailVerificationExpires,
       isEmailVerified: false
@@ -667,6 +674,243 @@ export const uploadProfilePicture = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to upload profile picture',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Send OTP for email verification
+export const sendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Generate 4-digit OTP
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Update user with OTP
+    await user.update({
+      otpCode,
+      otpExpires
+    });
+
+    // Send OTP email
+    let emailSent = false;
+    try {
+      await sendOTPEmail(user.email, otpCode, user.fullName);
+      console.log('✅ OTP email sent successfully');
+      emailSent = true;
+    } catch (emailError) {
+      console.error('❌ Failed to send OTP email:', emailError.message);
+      
+      // In development mode, allow proceeding without email
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 Development mode: Continuing without email, use OTP: 0000');
+        emailSent = false;
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send OTP email'
+        });
+      }
+    }
+
+    const responseMessage = emailSent 
+      ? 'OTP sent successfully'
+      : 'OTP generated successfully (development mode - use 0000)';
+
+    res.json({
+      success: true,
+      message: responseMessage,
+      data: {
+        email: user.email,
+        expiresIn: '10 minutes',
+        devMode: process.env.NODE_ENV === 'development' && !emailSent ? true : false
+      }
+    });
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send OTP',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Verify OTP
+export const verifyOTP = async (req, res) => {
+  try {
+    const { email, otpCode } = req.body;
+
+    if (!email || !otpCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and OTP code are required'
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Development mode bypass - accept '0000' as valid OTP
+    if (process.env.NODE_ENV === 'development' && otpCode === '0000') {
+      console.log('🔧 Development mode: Using bypass OTP');
+      
+      // Verify user and clear OTP
+      await user.update({
+        isEmailVerified: true,
+        otpCode: null,
+        otpExpires: null,
+        emailVerificationToken: null,
+        emailVerificationExpires: null
+      });
+
+      // Generate tokens
+      const { accessToken, refreshToken } = generateTokens(user);
+
+      return res.json({
+        success: true,
+        message: 'Email verified successfully (development mode)',
+        data: {
+          user: user.toSafeObject(),
+          accessToken,
+          refreshToken
+        }
+      });
+    }
+
+    // Check if OTP is valid and not expired
+    if (!user.otpCode || user.otpCode !== otpCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP code'
+      });
+    }
+
+    if (!user.otpExpires || user.otpExpires < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP code has expired'
+      });
+    }
+
+    // Verify user and clear OTP
+    await user.update({
+      isEmailVerified: true,
+      otpCode: null,
+      otpExpires: null,
+      emailVerificationToken: null,
+      emailVerificationExpires: null
+    });
+
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user);
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully',
+      data: {
+        user: user.toSafeObject(),
+        accessToken,
+        refreshToken
+      }
+    });
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify OTP',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Resend OTP
+export const resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Generate new 4-digit OTP
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Update user with new OTP
+    await user.update({
+      otpCode,
+      otpExpires
+    });
+
+    // Send OTP email
+    try {
+      await sendOTPEmail(user.email, otpCode, user.fullName);
+      console.log('✅ OTP resent successfully');
+    } catch (emailError) {
+      console.error('❌ Failed to resend OTP email:', emailError.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to resend OTP email'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'OTP resent successfully',
+      data: {
+        email: user.email,
+        expiresIn: '10 minutes'
+      }
+    });
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to resend OTP',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

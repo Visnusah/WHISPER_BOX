@@ -2,18 +2,22 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { authAPI } from '../services/api'
+import OTPVerificationModal from '../components/OTPVerificationModal'
 
 function SignupPage() {
   const [formData, setFormData] = useState({
     email: '',
-    username: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    fullName: ''
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [showOTPModal, setShowOTPModal] = useState(false)
+  const [isSendingOTP, setIsSendingOTP] = useState(false)
   const { signup } = useAuth()
   const { addToast } = useToast()
   const navigate = useNavigate()
@@ -28,7 +32,7 @@ function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!formData.email || !formData.username || !formData.password || !formData.confirmPassword) {
+    if (!formData.email || !formData.fullName || !formData.password || !formData.confirmPassword) {
       addToast('Please fill in all fields', 'error')
       return
     }
@@ -43,16 +47,43 @@ function SignupPage() {
       return
     }
 
-    setIsLoading(true)
+    setIsSendingOTP(true)
     try {
-      await signup(formData.email, formData.password, formData.username)
-      addToast('Account created successfully!', 'success')
-      navigate('/home')
+      // First create the user account
+      const signupResponse = await authAPI.signup(
+        formData.email, 
+        formData.password, 
+        formData.fullName
+      )
+      
+      if (signupResponse.success) {
+        // Then send OTP for verification
+        const otpResponse = await authAPI.sendOTP(formData.email)
+        
+        if (otpResponse.success) {
+          let message = 'Account created! Please verify your email with the code we sent.'
+          if (otpResponse.data.devMode) {
+            message = 'Account created! Development mode: Use code "0000" to verify.'
+          }
+          addToast(message, 'success')
+          setShowOTPModal(true)
+        } else {
+          addToast(otpResponse.message || 'Failed to send verification code', 'error')
+        }
+      } else {
+        addToast(signupResponse.message || 'Signup failed. Please try again.', 'error')
+      }
     } catch (error) {
+      console.error('Signup failed:', error)
       addToast('Signup failed. Please try again.', 'error')
     } finally {
-      setIsLoading(false)
+      setIsSendingOTP(false)
     }
+  }
+
+  const handleOTPSuccess = (user) => {
+    addToast('Account verified successfully! Welcome to Whisper Box!', 'success')
+    navigate('/home')
   }
 
   return (
@@ -93,18 +124,17 @@ function SignupPage() {
             </div>
 
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Username
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name
               </label>
               <input
-                id="username"
-                name="username"
+                id="fullName"
+                name="fullName"
                 type="text"
-                value={formData.username}
+                value={formData.fullName}
                 onChange={handleChange}
                 className="input-field"
-                placeholder="Choose a username"
-                required
+                placeholder="Enter your full name"
               />
             </div>
 
@@ -160,10 +190,17 @@ function SignupPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSendingOTP}
               className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
             >
-              {isLoading ? 'Creating account...' : 'Create Account'}
+              {isSendingOTP ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
             </button>
           </form>
 
@@ -182,6 +219,16 @@ function SignupPage() {
             ← Back to home
           </Link>
         </div>
+
+        {/* OTP Verification Modal */}
+        <OTPVerificationModal
+          isOpen={showOTPModal}
+          onClose={() => setShowOTPModal(false)}
+          email={formData.email}
+          password={formData.password}
+          onSuccess={handleOTPSuccess}
+          mode="signup"
+        />
       </div>
     </div>
   )

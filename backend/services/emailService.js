@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
-import { render } from '@react-email/render';
 import dotenv from 'dotenv';
+import OTPVerificationEmail from '../emails/OTPVerificationEmail.js';
 
 dotenv.config();
 
@@ -239,8 +239,26 @@ export const sendWelcomeEmail = async (user) => {
   }
 };
 
-export default {
-  sendVerificationEmail,
-  sendPasswordResetEmail,
-  sendWelcomeEmail
+// Send OTP verification email
+export const sendOTPEmail = async (email, otp, userName) => {
+  try {
+    const transporter = createTransporter();
+    const emailHtml = OTPVerificationEmail({ otp, userName });
+    const emailText = `Your verification code is: ${otp}`;
+
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM}>`,
+      to: email,
+      subject: 'Your Verification Code - Whisper Box',
+      html: emailHtml,
+      text: emailText
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✅ OTP email sent successfully:', result.messageId);
+    return result;
+  } catch (error) {
+    console.error('❌ Error sending OTP email:', error);
+    throw error;
+  }
 };
