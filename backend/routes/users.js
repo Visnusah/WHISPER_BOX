@@ -15,7 +15,7 @@ router.get('/:id', getUserById);
 
 // Admin only routes
 router.get('/', authenticateToken, requireAdmin, getAllUsers);
-router.post('/:id/toggle-status', authenticateToken, requireAdmin, toggleUserStatus);
+router.put('/:id/toggle-status', authenticateToken, requireAdmin, toggleUserStatus);
 router.delete('/:id', authenticateToken, requireAdmin, deleteUser);
 router.get('/admin/dashboard-stats', authenticateToken, requireAdmin, getDashboardStats);
 

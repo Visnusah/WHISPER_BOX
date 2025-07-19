@@ -42,6 +42,19 @@ function LoginPage() {
         setVerificationEmail(email)
         setShowVerificationModal(true)
         addToast('Your account is not verified. Please verify your email to continue.', 'warning')
+      } else if ((error.response?.status === 401 && 
+                 error.response?.data?.code === 'ACCOUNT_DEACTIVATED') ||
+                 error.response?.data?.message?.includes('Account is disabled')) {
+        // Account is deactivated
+        addToast('Your account has been deactivated. Redirecting to contact page...', 'error')
+        setTimeout(() => {
+          navigate('/contact', { 
+            state: { 
+              reason: 'account-deactivated',
+              email: email 
+            } 
+          })
+        }, 2000)
       } else if (error.response?.status === 401) {
         addToast('Invalid email or password. Please try again.', 'error')
       } else if (error.type === 'NETWORK_ERROR') {

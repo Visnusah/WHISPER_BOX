@@ -29,6 +29,19 @@ const apiRequest = async (endpoint, options = {}) => {
     const data = await response.json()
     
     if (!response.ok) {
+      // Handle account deactivation
+      if (response.status === 403 && data.code === 'ACCOUNT_DEACTIVATED') {
+        // Trigger deactivation handler
+        if (window.handleAccountDeactivation) {
+          window.handleAccountDeactivation()
+        }
+        const error = new Error(data.message || 'Account has been deactivated')
+        error.status = response.status
+        error.code = 'ACCOUNT_DEACTIVATED'
+        error.response = { status: response.status, data }
+        throw error
+      }
+      
       // Handle token expiry
       if (response.status === 401 && data.message?.includes('expired')) {
         const refreshed = await refreshAccessToken()
@@ -39,6 +52,18 @@ const apiRequest = async (endpoint, options = {}) => {
           const retryData = await retryResponse.json()
           
           if (!retryResponse.ok) {
+            // Check for deactivation in retry response too
+            if (retryResponse.status === 403 && retryData.code === 'ACCOUNT_DEACTIVATED') {
+              if (window.handleAccountDeactivation) {
+                window.handleAccountDeactivation()
+              }
+              const error = new Error(retryData.message || 'Account has been deactivated')
+              error.status = retryResponse.status
+              error.code = 'ACCOUNT_DEACTIVATED'
+              error.response = { status: retryResponse.status, data: retryData }
+              throw error
+            }
+            
             const error = new Error(retryData.message || 'API request failed')
             error.status = retryResponse.status
             error.response = { status: retryResponse.status, data: retryData }
@@ -404,10 +429,21 @@ export const unsavePost = async (postId) => {
   })
 }
 
+// Contact API
+export const contactAPI = {
+  sendMessage: async (contactData) => {
+    return apiRequest('/contact/send', {
+      method: 'POST',
+      body: JSON.stringify(contactData)
+    })
+  }
+}
+
 export default {
   auth: authAPI,
   posts: postsAPI,
   comments: commentsAPI,
   savedPosts: savedPostsAPI,
-  users: usersAPI
+  users: usersAPI,
+  contact: contactAPI
 }

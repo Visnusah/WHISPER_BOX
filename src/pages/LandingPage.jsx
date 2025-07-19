@@ -240,15 +240,27 @@ function LandingPage() {
             </div>
             
             <div className="text-right space-y-4">
-              <div>
-                <p className="text-slate-300 mb-2">Are you an admin?</p>
-                <Link 
-                  to="/login" 
-                  className="inline-flex items-center text-indigo-400 hover:text-indigo-300 transition-colors duration-300 group"
-                >
-                  Admin Login
-                  <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
-                </Link>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-slate-300 mb-2">Need help or have questions?</p>
+                  <Link 
+                    to="/contact" 
+                    className="inline-flex items-center text-green-400 hover:text-green-300 transition-colors duration-300 group mr-6"
+                  >
+                    Contact Us
+                    <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Link>
+                </div>
+                <div>
+                  <p className="text-slate-300 mb-2">Are you an admin?</p>
+                  <Link 
+                    to="/login" 
+                    className="inline-flex items-center text-indigo-400 hover:text-indigo-300 transition-colors duration-300 group"
+                  >
+                    Admin Login
+                    <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Link>
+                </div>
               </div>
               <div className="text-sm text-slate-400">
                 © 2024 Whisper Box. Made with ❤️ for creators.

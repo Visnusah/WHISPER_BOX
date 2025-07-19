@@ -61,19 +61,48 @@ function AdminDashboard() {
   const activeUsers = users.filter(u => u.isActive !== false).length
   const totalPosts = posts.length
 
-  const toggleUserStatus = (userId) => {
-    setUsers(prevUsers => 
-      prevUsers.map(u => 
-        u.id === userId 
-          ? { ...u, isActive: u.isActive === false ? true : false }
-          : u
+  const toggleUserStatus = async (userId) => {
+    try {
+      // Optimistically update UI
+      setUsers(prevUsers => 
+        prevUsers.map(u => 
+          u.id === userId 
+            ? { ...u, isActive: !u.isActive }
+            : u
+        )
       )
-    )
-    const updatedUser = users.find(u => u.id === userId)
-    addToast(
-      `User ${updatedUser.isActive === false ? 'activated' : 'deactivated'} successfully`, 
-      'success'
-    )
+
+      // Call API to update user status
+      const response = await usersAPI.toggleUserStatus(userId)
+      
+      if (response.success) {
+        const updatedUser = response.data.user
+        // Update with actual response data
+        setUsers(prevUsers => 
+          prevUsers.map(u => 
+            u.id === userId 
+              ? { ...u, isActive: updatedUser.isActive }
+              : u
+          )
+        )
+        addToast(
+          `User ${updatedUser.isActive ? 'activated' : 'deactivated'} successfully`, 
+          'success'
+        )
+      } else {
+        throw new Error(response.message || 'Failed to update user status')
+      }
+    } catch (error) {
+      // Revert optimistic update on error
+      setUsers(prevUsers => 
+        prevUsers.map(u => 
+          u.id === userId 
+            ? { ...u, isActive: !u.isActive }
+            : u
+        )
+      )
+      addToast(error.message || 'Failed to update user status', 'error')
+    }
   }
 
   const deletePost = (postId) => {
@@ -312,7 +341,14 @@ function AdminDashboard() {
 
   const renderUserManagement = () => (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-900">User Management</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-slate-900">User Management</h2>
+        <div className="flex items-center space-x-4">
+          <div className="text-sm text-gray-600">
+            Total: {users.length} | Active: {activeUsers} | Inactive: {users.length - activeUsers}
+          </div>
+        </div>
+      </div>
       
       <div className="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
@@ -326,7 +362,16 @@ function AdminDashboard() {
                   Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Email Verified
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Joined
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Actions
@@ -334,55 +379,95 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50">
+              {users.map((listUser) => (
+                <tr key={listUser.id} className={`hover:bg-slate-50 ${listUser.isActive === false ? 'bg-red-50' : ''}`}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <img className="h-10 w-10 rounded-full" src={user.profileImage} alt="" />
+                      <img 
+                        className="h-10 w-10 rounded-full" 
+                        src={listUser.profileImage || '/placeholder-avatar.png'} 
+                        alt={listUser.fullName || listUser.username} 
+                      />
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-slate-900">{user.username}</div>
+                        <div className="text-sm font-medium text-slate-900">
+                          {listUser.fullName || listUser.username}
+                        </div>
+                        <div className="text-sm text-slate-500">@{listUser.username}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                    {user.email}
+                    {listUser.email}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.isActive === false 
+                      listUser.isAdmin 
+                        ? 'bg-purple-100 text-purple-800' 
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {listUser.isAdmin ? 'Admin' : 'User'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      listUser.isActive === false 
                         ? 'bg-red-100 text-red-800' 
                         : 'bg-green-100 text-green-800'
                     }`}>
-                      {user.isActive === false ? 'Deactivated' : 'Active'}
+                      {listUser.isActive === false ? 'Inactive' : 'Active'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => toggleUserStatus(user.id)}
-                      className={`inline-flex items-center px-3 py-1 rounded-md text-sm ${
-                        user.isActive === false
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : 'bg-red-100 text-red-700 hover:bg-red-200'
-                      }`}
-                    >
-                      {user.isActive === false ? (
-                        <>
-                          <UserCheck className="w-4 h-4 mr-1" />
-                          Activate
-                        </>
-                      ) : (
-                        <>
-                          <UserX className="w-4 h-4 mr-1" />
-                          Deactivate
-                        </>
-                      )}
-                    </button>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      listUser.isEmailVerified 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {listUser.isEmailVerified ? 'Verified' : 'Pending'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    {new Date(listUser.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                    {/* Don't allow admin to deactivate themselves */}
+                    {listUser.id !== user.id ? (
+                      <button
+                        onClick={() => toggleUserStatus(listUser.id)}
+                        className={`inline-flex items-center px-3 py-1 rounded-md text-sm transition-colors ${
+                          listUser.isActive === false
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-red-100 text-red-700 hover:bg-red-200'
+                        }`}
+                      >
+                        {listUser.isActive === false ? (
+                          <>
+                            <UserCheck className="w-4 h-4 mr-1" />
+                            Activate
+                          </>
+                        ) : (
+                          <>
+                            <UserX className="w-4 h-4 mr-1" />
+                            Deactivate
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400 px-3 py-1 bg-gray-100 rounded">
+                        Current User
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {users.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            No users found
+          </div>
+        )}
       </div>
     </div>
   )

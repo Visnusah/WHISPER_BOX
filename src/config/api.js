@@ -58,6 +58,9 @@ export const ENDPOINTS = {
     GET_BY_POST: (postId) => `/posts/${postId}/comments`,
     CREATE: (postId) => `/posts/${postId}/comments`,
     DELETE: (postId, commentId) => `/posts/${postId}/comments/${commentId}`
+  },
+  CONTACT: {
+    SEND: '/contact/send'
   }
 }
 

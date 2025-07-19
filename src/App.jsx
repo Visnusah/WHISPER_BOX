@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
+import { useAccountDeactivationHandler } from './hooks/useAccountDeactivationHandler'
 import ErrorBoundary from './components/ErrorBoundary'
 import LandingPage from './pages/LandingPage'
 import HomePage from './pages/HomePage'
@@ -15,6 +16,7 @@ import SignupPage from './pages/SignupPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import NewPasswordPage from './pages/NewPasswordPage'
 import EmailVerificationPage from './pages/EmailVerificationPage'
+import ContactPage from './pages/ContactPage'
 import NotFoundPage from './pages/NotFoundPage'
 import ServerErrorPage from './pages/ServerErrorPage'
 import UnauthorizedPage from './pages/UnauthorizedPage'
@@ -26,68 +28,78 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import Toast from './components/Toast'
 
+function AppRoutes() {
+  // Initialize account deactivation handler
+  useAccountDeactivationHandler()
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/reset-password/:token" element={<NewPasswordPage />} />
+        <Route path="/email-verification" element={<EmailVerificationPage />} />
+        <Route path="/email-verification/:token" element={<EmailVerificationPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/home" element={
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/create" element={
+          <ProtectedRoute>
+            <CreatePostPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/saved" element={
+          <ProtectedRoute>
+            <SavedPostsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/trending" element={
+          <ProtectedRoute>
+            <TrendingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        } />
+        
+        {/* Error Pages */}
+        <Route path="/error/500" element={<ServerErrorPage />} />
+        <Route path="/error/401" element={<UnauthorizedPage />} />
+        <Route path="/error/403" element={<ForbiddenPage />} />
+        <Route path="/error/network" element={<NetworkErrorPage />} />
+        <Route path="/maintenance" element={<MaintenancePage />} />
+        
+        {/* Development/Testing Routes */}
+        {process.env.NODE_ENV === 'development' && (
+          <Route path="/test-errors" element={<ErrorPageTest />} />
+        )}
+        
+        {/* 404 - This should be last */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+      <Toast />
+    </div>
+  )
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
         <ToastProvider>
-          <div className="min-h-screen bg-gray-50">
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/reset-password/:token" element={<NewPasswordPage />} />
-              <Route path="/email-verification" element={<EmailVerificationPage />} />
-              <Route path="/email-verification/:token" element={<EmailVerificationPage />} />
-              <Route path="/home" element={
-                <ProtectedRoute>
-                  <HomePage />
-                </ProtectedRoute>
-              } />
-              <Route path="/create" element={
-                <ProtectedRoute>
-                  <CreatePostPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              } />
-              <Route path="/saved" element={
-                <ProtectedRoute>
-                  <SavedPostsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/trending" element={
-                <ProtectedRoute>
-                  <TrendingPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin" element={
-                <AdminRoute>
-                  <AdminDashboard />
-                </AdminRoute>
-              } />
-              
-              {/* Error Pages */}
-              <Route path="/error/500" element={<ServerErrorPage />} />
-              <Route path="/error/401" element={<UnauthorizedPage />} />
-              <Route path="/error/403" element={<ForbiddenPage />} />
-              <Route path="/error/network" element={<NetworkErrorPage />} />
-              <Route path="/maintenance" element={<MaintenancePage />} />
-              
-              {/* Development/Testing Routes */}
-              {process.env.NODE_ENV === 'development' && (
-                <Route path="/test-errors" element={<ErrorPageTest />} />
-              )}
-              
-              {/* 404 - This should be last */}
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-            <Toast />
-          </div>
+          <AppRoutes />
         </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
