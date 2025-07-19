@@ -133,8 +133,12 @@ function HomePage() {
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center shadow-medium">
-              <Sparkles className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-medium overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="Whisper Box Logo" 
+                className="w-full h-full object-cover rounded-2xl"
+              />
             </div>
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-text-800 flex items-center">
@@ -259,8 +263,12 @@ function HomePage() {
             </div>
           ) : filteredPosts.length === 0 ? (
             <div className="text-center py-16 animate-fade-in">
-              <div className="w-24 h-24 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <Sparkles className="w-12 h-12 text-primary-600" />
+              <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 overflow-hidden">
+                <img 
+                  src="/logo.png" 
+                  alt="Whisper Box Logo" 
+                  className="w-full h-full object-cover rounded-3xl"
+                />
               </div>
               <h3 className="text-2xl font-semibold text-text-700 mb-4">No posts found</h3>
               {searchTerm ? (

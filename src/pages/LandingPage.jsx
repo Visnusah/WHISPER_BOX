@@ -57,8 +57,12 @@ function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                {/* <Sparkles className="text-white w-5 h-5" /> */}
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
+                <img 
+                  src="/logo.png" 
+                  alt="Whisper Box Logo" 
+                  className="w-full h-full object-cover rounded-2xl"
+                />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">WHISPER BOX</span>
             </div>
@@ -121,8 +125,12 @@ function LandingPage() {
             <div className="relative animate-slide-in-right">
               <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-8 space-y-6">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden">
+                    <img 
+                      src="/logo.png" 
+                      alt="Whisper Box Logo" 
+                      className="w-full h-full object-cover rounded-2xl"
+                    />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-slate-800">Join the Community</h3>
@@ -223,8 +231,12 @@ function LandingPage() {
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-                  <Sparkles className="text-white w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden">
+                  <img 
+                    src="/logo.png" 
+                    alt="Whisper Box Logo" 
+                    className="w-full h-full object-cover rounded-xl"
+                  />
                 </div>
                 <span className="text-xl font-bold">WHISPER BOX</span>
               </div>
