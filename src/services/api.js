@@ -57,8 +57,6 @@ const apiRequest = async (endpoint, options = {}) => {
     
     return data
   } catch (error) {
-    console.error('API Error:', error)
-    
     // Handle network errors
     if (!navigator.onLine) {
       const networkError = new Error('No internet connection')
@@ -104,7 +102,6 @@ const refreshAccessToken = async () => {
     window.location.href = '/login'
     return false
   } catch (error) {
-    console.error('Token refresh failed:', error)
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('user')
@@ -251,7 +248,7 @@ export const authAPI = {
     try {
       await apiRequest('/auth/logout', { method: 'POST' })
     } catch (error) {
-      console.error('Logout API error:', error)
+      // Silent error handling for logout
     } finally {
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
@@ -370,7 +367,6 @@ export const uploadProfileImage = async (imageFile) => {
 
     return data
   } catch (error) {
-    console.error('Upload profile image error:', error)
     throw error
   }
 }

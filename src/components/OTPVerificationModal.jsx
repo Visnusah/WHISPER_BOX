@@ -109,8 +109,7 @@ function OTPVerificationModal({ isOpen, onClose, email, password, onSuccess, mod
         setError(response.message || 'Invalid verification code')
       }
     } catch (error) {
-      console.error('OTP verification failed:', error)
-      setError('Invalid verification code. Please try again.')
+      setError(error.message || 'Invalid verification code. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -133,8 +132,7 @@ function OTPVerificationModal({ isOpen, onClose, email, password, onSuccess, mod
         setError(response.message || 'Failed to resend code')
       }
     } catch (error) {
-      console.error('Resend OTP failed:', error)
-      setError('Failed to resend code. Please try again.')
+      setError(error.message || 'Failed to resend code. Please try again.')
     } finally {
       setIsResending(false)
     }

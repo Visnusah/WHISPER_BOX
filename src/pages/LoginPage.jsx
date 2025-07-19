@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
-import { Eye, EyeOff, Mail, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Mail, Loader2, AlertTriangle } from 'lucide-react'
+import { authAPI } from '../services/api'
+import OTPVerificationModal from '../components/OTPVerificationModal'
 
 function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,6 +14,9 @@ function LoginPage() {
   const [showResetForm, setShowResetForm] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
   const [isResetting, setIsResetting] = useState(false)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [showOTPModal, setShowOTPModal] = useState(false)
+  const [verificationEmail, setVerificationEmail] = useState('')
   const { login } = useAuth()
   const { addToast } = useToast()
   const navigate = useNavigate()
@@ -35,20 +40,44 @@ function LoginPage() {
         navigate('/home')
       }
     } catch (error) {
-      console.error('Login error:', error)
-      
       // Handle specific error types
       if (error.message?.includes('EMAIL_NOT_VERIFIED') || 
           (error.response?.status === 403 && error.response?.data?.code === 'EMAIL_NOT_VERIFIED')) {
-        addToast('Please verify your email before logging in. Check your inbox or sign up again to resend OTP.', 'warning')
+        // Show confirmation modal for email verification
+        setVerificationEmail(email)
+        setShowVerificationModal(true)
+        addToast('Your account is not verified. Please verify your email to continue.', 'warning')
       } else if (error.response?.status === 401) {
         addToast('Invalid email or password. Please try again.', 'error')
+      } else if (error.type === 'NETWORK_ERROR') {
+        addToast('Network error. Please check your internet connection.', 'error')
       } else {
-        addToast('Login failed. Please try again.', 'error')
+        addToast(error.message || 'Login failed. Please try again.', 'error')
       }
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleVerificationConfirm = async () => {
+    setShowVerificationModal(false)
+    try {
+      const response = await authAPI.sendOTP(verificationEmail)
+      if (response.success) {
+        addToast('Verification code sent to your email!', 'success')
+        setShowOTPModal(true)
+      } else {
+        addToast(response.message || 'Failed to send verification code', 'error')
+      }
+    } catch (error) {
+      addToast(error.message || 'Failed to send verification code', 'error')
+    }
+  }
+
+  const handleOTPSuccess = () => {
+    setShowOTPModal(false)
+    addToast('Email verified successfully! Please login again.', 'success')
+    // Optionally auto-login here, or just show success message
   }
 
   const handlePasswordReset = async (e) => {
@@ -231,6 +260,50 @@ function LoginPage() {
             ← Back to home
           </Link>
         </div>
+
+        {/* Email Verification Confirmation Modal */}
+        {showVerificationModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="flex-shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-amber-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Email Verification Required</h3>
+              </div>
+              
+              <p className="text-gray-600 mb-6">
+                Your account is registered but not verified. Would you like us to send a verification code to your email?
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleVerificationConfirm}
+                  className="flex-1 btn-primary"
+                >
+                  Send Verification Code
+                </button>
+                <button
+                  onClick={() => setShowVerificationModal(false)}
+                  className="flex-1 btn-ghost"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* OTP Verification Modal */}
+        {showOTPModal && (
+          <OTPVerificationModal
+            isOpen={showOTPModal}
+            onClose={() => setShowOTPModal(false)}
+            email={verificationEmail}
+            onSuccess={handleOTPSuccess}
+            mode="verification"
+          />
+        )}
       </div>
     </div>
   )

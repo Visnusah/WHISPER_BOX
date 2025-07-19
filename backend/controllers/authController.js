@@ -82,13 +82,9 @@ export const signup = async (req, res) => {
     try {
       await sendVerificationEmail(user.email, user.fullName, emailVerificationToken);
       emailSent = true;
-      console.log('✅ Verification email sent successfully');
     } catch (emailError) {
-      console.error('❌ Failed to send verification email:', emailError.message);
-      
-      // SECURITY FIX: Remove auto-verification in development mode
-      // Users must always verify their email regardless of environment
-      console.log('⚠️ Email verification required - email service needs to be configured properly');
+      // Log error internally but don't expose to user
+      console.error('Email service error:', emailError.message);
     }
 
     const responseMessage = emailSent 
@@ -112,8 +108,8 @@ export const signup = async (req, res) => {
     console.error('Signup error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create user',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message || 'Registration failed. Please try again.',
+      code: 'SIGNUP_ERROR'
     });
   }
 };
@@ -165,7 +161,8 @@ export const verifyEmail = async (req, res) => {
     try {
       await sendWelcomeEmail(user.email, user.fullName);
     } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
+      // Log internally but don't affect user experience
+      console.error('Welcome email error:', emailError);
     }
 
     res.json({
@@ -181,8 +178,8 @@ export const verifyEmail = async (req, res) => {
     console.error('Email verification error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to verify email',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message || 'Email verification failed. Please try again or contact support.',
+      code: 'VERIFICATION_ERROR'
     });
   }
 };
@@ -258,9 +255,10 @@ export const login = async (req, res) => {
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
-      return res.status(401).json({
+      return res.status(404).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Account not registered. Please sign up first.',
+        code: 'ACCOUNT_NOT_FOUND'
       });
     }
 
@@ -274,13 +272,37 @@ export const login = async (req, res) => {
 
     // Check if email is verified
     if (!user.isEmailVerified) {
+      // Automatically send OTP to help user verify account
+      let otpSent = false;
+      try {
+        const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        await user.update({
+          otpCode,
+          otpExpires,
+          otpAttempts: 0
+        });
+
+        // Try to send OTP email
+        await sendOTPEmail(user.email, otpCode, user.fullName);
+        otpSent = true;
+      } catch (emailError) {
+        // Log error internally
+        console.error('Email service error:', emailError.message);
+      }
+
       return res.status(403).json({
         success: false,
         message: 'Please verify your email address before logging in.',
         code: 'EMAIL_NOT_VERIFIED',
         data: {
           email: user.email,
-          needsVerification: true
+          needsVerification: true,
+          otpSent: otpSent,
+          message: otpSent 
+            ? 'An OTP has been sent to your email for verification.'
+            : 'Please request OTP verification or contact support if email service is unavailable.'
         }
       });
     }
@@ -290,7 +312,8 @@ export const login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email or password. Please check your credentials.',
+        code: 'INVALID_CREDENTIALS'
       });
     }
 
@@ -316,8 +339,8 @@ export const login = async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Login failed',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message || 'An unexpected error occurred during login. Please try again.',
+      code: 'LOGIN_ERROR'
     });
   }
 };
@@ -720,15 +743,14 @@ export const sendOTP = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found with this email address.',
+        code: 'USER_NOT_FOUND'
       });
     }
 
     // Generate 4-digit OTP
     const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    console.log('🔢 Generated OTP:', otpCode, 'for user:', user.email);
 
     // Update user with OTP
     await user.update({
@@ -737,30 +759,22 @@ export const sendOTP = async (req, res) => {
       otpAttempts: 0 // Reset attempts when new OTP is generated
     });
 
-    console.log('💾 OTP saved to database for user:', user.email);
-
     // Send OTP email
     try {
       await sendOTPEmail(user.email, otpCode, user.fullName);
-      console.log('✅ OTP email sent successfully');
     } catch (emailError) {
-      console.error('❌ Failed to send OTP email:', emailError.message);
-      
-      // In development, log the OTP to console as fallback
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 DEVELOPMENT: OTP email failed, but OTP is:', otpCode);
-        console.log('🔧 DEVELOPMENT: Use this OTP to verify account for:', user.email);
-      }
+      console.error('Email service error:', emailError.message);
       
       return res.status(500).json({
         success: false,
-        message: 'Failed to send OTP email'
+        message: 'Failed to send OTP email. Please try again or contact support.',
+        code: 'EMAIL_SERVICE_ERROR'
       });
     }
 
     res.json({
       success: true,
-      message: 'OTP sent successfully',
+      message: 'OTP sent successfully to your email.',
       data: {
         email: user.email,
         expiresIn: '10 minutes'
@@ -770,8 +784,8 @@ export const sendOTP = async (req, res) => {
     console.error('Send OTP error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to send OTP',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message || 'Failed to send OTP. Please try again.',
+      code: 'OTP_SEND_ERROR'
     });
   }
 };
@@ -793,19 +807,16 @@ export const verifyOTP = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found with this email address.',
+        code: 'USER_NOT_FOUND'
       });
     }
-
-    console.log('🔍 Verifying OTP for user:', user.email);
-    console.log('📧 Stored OTP:', user.otpCode, 'Provided OTP:', otpCode);
-    console.log('⏰ OTP expires:', user.otpExpires, 'Current time:', new Date());
 
     // Check if too many failed attempts
     if (user.otpAttempts >= 5) {
       return res.status(429).json({
         success: false,
-        message: 'Too many failed OTP attempts. Please request a new OTP.',
+        message: 'Too many failed attempts. Please request a new OTP.',
         code: 'TOO_MANY_ATTEMPTS'
       });
     }
@@ -817,18 +828,21 @@ export const verifyOTP = async (req, res) => {
         otpAttempts: user.otpAttempts + 1
       });
       
-      console.log('❌ OTP mismatch or missing');
       return res.status(400).json({
         success: false,
-        message: 'Invalid OTP code',
-        attemptsRemaining: Math.max(0, 5 - (user.otpAttempts + 1))
+        message: 'Invalid OTP code. Please check and try again.',
+        code: 'INVALID_OTP',
+        data: {
+          attemptsRemaining: Math.max(0, 5 - (user.otpAttempts + 1))
+        }
       });
     }
 
     if (!user.otpExpires || user.otpExpires < new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'OTP code has expired'
+        message: 'OTP has expired. Please request a new one.',
+        code: 'OTP_EXPIRED'
       });
     }
 
@@ -853,7 +867,7 @@ export const verifyOTP = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Email verified successfully',
+      message: 'Email verified successfully! You are now logged in.',
       data: {
         user: user.toSafeObject(),
         accessToken,
@@ -864,8 +878,8 @@ export const verifyOTP = async (req, res) => {
     console.error('Verify OTP error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to verify OTP',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message || 'OTP verification failed. Please try again.',
+      code: 'OTP_VERIFICATION_ERROR'
     });
   }
 };
@@ -887,14 +901,16 @@ export const resendOTP = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found with this email address.',
+        code: 'USER_NOT_FOUND'
       });
     }
 
     if (user.isEmailVerified) {
       return res.status(400).json({
         success: false,
-        message: 'Email is already verified'
+        message: 'Your email is already verified. You can login directly.',
+        code: 'ALREADY_VERIFIED'
       });
     }
 
@@ -912,18 +928,18 @@ export const resendOTP = async (req, res) => {
     // Send OTP email
     try {
       await sendOTPEmail(user.email, otpCode, user.fullName);
-      console.log('✅ OTP resent successfully');
     } catch (emailError) {
-      console.error('❌ Failed to resend OTP email:', emailError.message);
+      console.error('Email service error:', emailError.message);
       return res.status(500).json({
         success: false,
-        message: 'Failed to resend OTP email'
+        message: 'Failed to send OTP email. Please try again or contact support.',
+        code: 'EMAIL_SERVICE_ERROR'
       });
     }
 
     res.json({
       success: true,
-      message: 'OTP resent successfully',
+      message: 'New OTP sent successfully to your email.',
       data: {
         email: user.email,
         expiresIn: '10 minutes'
@@ -933,8 +949,8 @@ export const resendOTP = async (req, res) => {
     console.error('Resend OTP error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to resend OTP',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message || 'Failed to resend OTP. Please try again.',
+      code: 'OTP_RESEND_ERROR'
     });
   }
 };
@@ -956,12 +972,14 @@ export const checkVerificationStatus = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found with this email address.',
+        code: 'USER_NOT_FOUND'
       });
     }
 
     res.json({
       success: true,
+      message: 'Verification status retrieved successfully.',
       data: {
         email: user.email,
         isEmailVerified: user.isEmailVerified,
@@ -973,8 +991,8 @@ export const checkVerificationStatus = async (req, res) => {
     console.error('Check verification status error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to check verification status',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message || 'Failed to check verification status. Please try again.',
+      code: 'STATUS_CHECK_ERROR'
     });
   }
 };

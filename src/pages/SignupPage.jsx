@@ -87,8 +87,7 @@ function SignupPage() {
         }
       }
     } catch (error) {
-      console.error('Signup failed:', error)
-      addToast('Signup failed. Please try again.', 'error')
+      addToast(error.message || 'Signup failed. Please try again.', 'error')
     } finally {
       setIsSendingOTP(false)
     }

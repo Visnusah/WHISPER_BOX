@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('user', JSON.stringify(response.data.user))
       }
     } catch (error) {
-      console.error('Token verification failed:', error)
+      // Silent logout on token verification failure
       logout()
     } finally {
       setIsLoading(false)
@@ -53,8 +53,6 @@ export function AuthProvider({ children }) {
       }
       throw new Error(response.message || 'Login failed')
     } catch (error) {
-      console.error('Login error:', error)
-      
       // Check if it's an email verification error
       if (error.response?.status === 403 && error.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
         const verificationError = new Error(error.response.data.message || 'Please verify your email address before logging in.')
@@ -76,7 +74,6 @@ export function AuthProvider({ children }) {
       }
       throw new Error(response.message || 'Signup failed')
     } catch (error) {
-      console.error('Signup error:', error)
       throw error
     }
   }
@@ -86,7 +83,6 @@ export function AuthProvider({ children }) {
       const response = await authAPI.verifyEmail(token)
       return response
     } catch (error) {
-      console.error('Email verification error:', error)
       throw error
     }
   }
@@ -96,7 +92,6 @@ export function AuthProvider({ children }) {
       const response = await authAPI.resendVerification(email)
       return response
     } catch (error) {
-      console.error('Resend verification error:', error)
       throw error
     }
   }
@@ -106,7 +101,6 @@ export function AuthProvider({ children }) {
       const response = await authAPI.forgotPassword(email)
       return response
     } catch (error) {
-      console.error('Forgot password error:', error)
       throw error
     }
   }
@@ -116,7 +110,6 @@ export function AuthProvider({ children }) {
       const response = await authAPI.resetPassword(token, password)
       return response
     } catch (error) {
-      console.error('Reset password error:', error)
       throw error
     }
   }
@@ -130,7 +123,6 @@ export function AuthProvider({ children }) {
       }
       return response
     } catch (error) {
-      console.error('Change password error:', error)
       throw error
     }
   }
@@ -139,7 +131,7 @@ export function AuthProvider({ children }) {
     try {
       await authAPI.logout()
     } catch (error) {
-      console.error('Logout error:', error)
+      // Silent error handling for logout
     } finally {
       setUser(null)
     }
@@ -156,7 +148,6 @@ export function AuthProvider({ children }) {
       }
       throw new Error(response.message || 'Profile update failed')
     } catch (error) {
-      console.error('Profile update error:', error)
       throw error
     }
   }
@@ -172,7 +163,6 @@ export function AuthProvider({ children }) {
       }
       throw new Error(response.message || 'Failed to upload profile image')
     } catch (error) {
-      console.error('Upload profile image error:', error)
       throw error
     }
   }
