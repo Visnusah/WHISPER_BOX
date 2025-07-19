@@ -12,6 +12,9 @@ import TrendingPage from './pages/TrendingPage'
 import AdminDashboard from './pages/AdminDashboard'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
+import NewPasswordPage from './pages/NewPasswordPage'
+import EmailVerificationPage from './pages/EmailVerificationPage'
 import NotFoundPage from './pages/NotFoundPage'
 import ServerErrorPage from './pages/ServerErrorPage'
 import UnauthorizedPage from './pages/UnauthorizedPage'
@@ -33,6 +36,10 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/reset-password/:token" element={<NewPasswordPage />} />
+              <Route path="/email-verification" element={<EmailVerificationPage />} />
+              <Route path="/email-verification/:token" element={<EmailVerificationPage />} />
               <Route path="/home" element={
                 <ProtectedRoute>
                   <HomePage />

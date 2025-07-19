@@ -4,18 +4,13 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { Eye, EyeOff, Mail, Loader2, AlertTriangle } from 'lucide-react'
 import { authAPI } from '../services/api'
-import OTPVerificationModal from '../components/OTPVerificationModal'
 
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [showResetForm, setShowResetForm] = useState(false)
-  const [resetEmail, setResetEmail] = useState('')
-  const [isResetting, setIsResetting] = useState(false)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
-  const [showOTPModal, setShowOTPModal] = useState(false)
   const [verificationEmail, setVerificationEmail] = useState('')
   const { login } = useAuth()
   const { addToast } = useToast()
@@ -65,39 +60,13 @@ function LoginPage() {
       const response = await authAPI.sendOTP(verificationEmail)
       if (response.success) {
         addToast('Verification code sent to your email!', 'success')
-        setShowOTPModal(true)
+        // Redirect to email verification page instead of showing modal
+        navigate('/email-verification', { state: { email: verificationEmail, fromLogin: true } })
       } else {
         addToast(response.message || 'Failed to send verification code', 'error')
       }
     } catch (error) {
       addToast(error.message || 'Failed to send verification code', 'error')
-    }
-  }
-
-  const handleOTPSuccess = () => {
-    setShowOTPModal(false)
-    addToast('Email verified successfully! Please login again.', 'success')
-    // Optionally auto-login here, or just show success message
-  }
-
-  const handlePasswordReset = async (e) => {
-    e.preventDefault()
-    if (!resetEmail) {
-      addToast('Please enter your email address', 'error')
-      return
-    }
-
-    setIsResetting(true)
-    try {
-      // Mock password reset - in real app, this would call an API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      addToast('Password reset email sent! Check your inbox.', 'success')
-      setShowResetForm(false)
-      setResetEmail('')
-    } catch (error) {
-      addToast('Failed to send reset email. Please try again.', 'error')
-    } finally {
-      setIsResetting(false)
     }
   }
 
@@ -117,55 +86,11 @@ function LoginPage() {
         {/* Login Form */}
         <div className="card">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {showResetForm ? 'Reset Password' : 'Welcome Back'}
-            </h2>
-            <p className="text-gray-600 mt-2">
-              {showResetForm ? 'Enter your email to reset your password' : 'Sign in to your account'}
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
+            <p className="text-gray-600 mt-2">Sign in to your account</p>
           </div>
 
-          {showResetForm ? (
-            <form onSubmit={handlePasswordReset} className="space-y-4">
-              <div>
-                <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <input
-                    id="resetEmail"
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    className="input-field pl-10"
-                    placeholder="Enter your email"
-                    required
-                  />
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isResetting}
-                className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
-              >
-                {isResetting ? 'Sending Reset Email...' : 'Send Reset Email'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowResetForm(false)
-                  setResetEmail('')
-                }}
-                className="w-full btn-ghost"
-              >
-                Back to Login
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
@@ -207,13 +132,12 @@ function LoginPage() {
 
               <div className="flex items-center justify-between">
                 <div></div>
-                <button
-                  type="button"
-                  onClick={() => setShowResetForm(true)}
+                <Link
+                  to="/reset-password"
                   className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                 >
                   Forgot password?
-                </button>
+                </Link>
               </div>
 
               <button
@@ -231,31 +155,24 @@ function LoginPage() {
                 )}
               </button>
             </form>
-          )}
 
-          {!showResetForm && (
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
-                <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
-                  Sign up
-                </Link>
-              </p>
-            </div>
-          )}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
+                Sign up
+              </Link>
+            </p>
+          </div>
 
           {/* Demo Account Info */}
-          {!showResetForm && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2">Admin Account:</h4>
-              <div className="text-xs text-blue-800">
-                <p><strong>Admin:</strong> sahk0292@gmail.com / admin123</p>
-              </div>
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h4 className="text-sm font-semibold text-blue-900 mb-2">Admin Account:</h4>
+            <div className="text-xs text-blue-800">
+              <p><strong>Admin:</strong> sahk0292@gmail.com / admin123</p>
             </div>
-          )}
-        </div>
-
-        <div className="text-center mt-6">
+          </div>
+        </div>        <div className="text-center mt-6">
           <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
             ← Back to home
           </Link>
@@ -292,17 +209,6 @@ function LoginPage() {
               </div>
             </div>
           </div>
-        )}
-
-        {/* OTP Verification Modal */}
-        {showOTPModal && (
-          <OTPVerificationModal
-            isOpen={showOTPModal}
-            onClose={() => setShowOTPModal(false)}
-            email={verificationEmail}
-            onSuccess={handleOTPSuccess}
-            mode="verification"
-          />
         )}
       </div>
     </div>

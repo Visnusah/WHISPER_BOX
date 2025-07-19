@@ -1,23 +1,40 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { authAPI } from '../services/api'
+import OTPVerificationModal from '../components/OTPVerificationModal'
 
 export default function EmailVerificationPage() {
   const { token } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { verifyEmail } = useAuth()
-  const { showToast } = useToast()
-  const [status, setStatus] = useState('verifying') // verifying, success, error
+  const { addToast } = useToast()
+  const [status, setStatus] = useState('verifying') // verifying, success, error, otp
   const [message, setMessage] = useState('')
+  const [showOTPModal, setShowOTPModal] = useState(false)
+  const [email, setEmail] = useState('')
+
+  // Check if we're coming from login with email for OTP verification
+  const fromLogin = location.state?.fromLogin
+  const loginEmail = location.state?.email
 
   useEffect(() => {
-    if (token) {
+    if (fromLogin && loginEmail) {
+      // Coming from login page with unverified email
+      setEmail(loginEmail)
+      setStatus('otp')
+      setMessage('Please enter the OTP sent to your email to verify your account.')
+      setShowOTPModal(true)
+    } else if (token) {
+      // Traditional email verification link
       handleVerification()
     } else {
       setStatus('error')
       setMessage('Invalid verification link')
     }
-  }, [token])
+  }, [token, fromLogin, loginEmail])
 
   const handleVerification = async () => {
     try {
@@ -25,7 +42,7 @@ export default function EmailVerificationPage() {
       if (response.success) {
         setStatus('success')
         setMessage('Email verified successfully! You can now log in.')
-        showToast('Email verified successfully!', 'success')
+        addToast('Email verified successfully!', 'success')
       } else {
         setStatus('error')
         setMessage(response.message || 'Email verification failed')
@@ -33,8 +50,20 @@ export default function EmailVerificationPage() {
     } catch (error) {
       setStatus('error')
       setMessage(error.message || 'Email verification failed')
-      showToast(error.message || 'Email verification failed', 'error')
+      addToast(error.message || 'Email verification failed', 'error')
     }
+  }
+
+  const handleOTPSuccess = () => {
+    setShowOTPModal(false)
+    setStatus('success')
+    setMessage('Email verified successfully! You can now log in.')
+    addToast('Email verified successfully! Please login to continue.', 'success')
+  }
+
+  const handleOTPClose = () => {
+    setShowOTPModal(false)
+    navigate('/login')
   }
 
   return (
@@ -61,6 +90,7 @@ export default function EmailVerificationPage() {
             {status === 'verifying' && 'Verifying Email...'}
             {status === 'success' && 'Email Verified!'}
             {status === 'error' && 'Verification Failed'}
+            {status === 'otp' && 'Email Verification'}
           </h2>
 
           <p className="text-gray-600 mb-8">{message}</p>
@@ -100,6 +130,17 @@ export default function EmailVerificationPage() {
             </Link>
           </div>
         </div>
+
+        {/* OTP Verification Modal */}
+        {showOTPModal && (
+          <OTPVerificationModal
+            isOpen={showOTPModal}
+            onClose={handleOTPClose}
+            email={email}
+            onSuccess={handleOTPSuccess}
+            mode="verification"
+          />
+        )}
       </div>
     </div>
   )
