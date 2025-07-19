@@ -54,6 +54,15 @@ export function AuthProvider({ children }) {
       throw new Error(response.message || 'Login failed')
     } catch (error) {
       console.error('Login error:', error)
+      
+      // Check if it's an email verification error
+      if (error.response?.status === 403 && error.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        const verificationError = new Error(error.response.data.message || 'Please verify your email address before logging in.')
+        verificationError.code = 'EMAIL_NOT_VERIFIED'
+        verificationError.data = error.response.data.data
+        throw verificationError
+      }
+      
       throw error
     }
   }

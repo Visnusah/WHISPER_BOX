@@ -157,18 +157,34 @@ export const authAPI = {
   },
 
   async login(email, password) {
-    const response = await apiRequest('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password })
-    })
+    // Clear any existing tokens before attempting login
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('user')
     
-    if (response.success && response.data) {
-      localStorage.setItem('accessToken', response.data.accessToken)
-      localStorage.setItem('refreshToken', response.data.refreshToken)
-      localStorage.setItem('user', JSON.stringify(response.data.user))
+    try {
+      const response = await apiRequest('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      })
+      
+      // Only store tokens if login is completely successful
+      if (response.success && response.data && response.data.user && response.data.accessToken) {
+        localStorage.setItem('accessToken', response.data.accessToken)
+        localStorage.setItem('refreshToken', response.data.refreshToken)
+        localStorage.setItem('user', JSON.stringify(response.data.user))
+        return response
+      } else {
+        // If response doesn't have proper data, treat as failure
+        throw new Error('Invalid login response')
+      }
+    } catch (error) {
+      // Ensure no tokens are stored on any error
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('user')
+      throw error
     }
-    
-    return response
   },
 
   async forgotPassword(email) {

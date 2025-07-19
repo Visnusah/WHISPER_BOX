@@ -61,17 +61,30 @@ function SignupPage() {
         const otpResponse = await authAPI.sendOTP(formData.email)
         
         if (otpResponse.success) {
-          let message = 'Account created! Please verify your email with the code we sent.'
-          if (otpResponse.data.devMode) {
-            message = 'Account created! Development mode: Use code "0000" to verify.'
-          }
-          addToast(message, 'success')
+          addToast('Account created! Please verify your email with the code we sent.', 'success')
           setShowOTPModal(true)
         } else {
           addToast(otpResponse.message || 'Failed to send verification code', 'error')
         }
       } else {
-        addToast(signupResponse.message || 'Signup failed. Please try again.', 'error')
+        // Check if it's an unverified email case
+        if (signupResponse.code === 'EMAIL_NOT_VERIFIED' && signupResponse.data?.needsVerification) {
+          addToast('Email already registered but not verified. Please verify your email.', 'warning')
+          // Automatically send OTP for unverified users
+          try {
+            const otpResponse = await authAPI.sendOTP(formData.email)
+            if (otpResponse.success) {
+              addToast('Verification code sent to your email.', 'success')
+              setShowOTPModal(true)
+            } else {
+              addToast('Failed to send verification code', 'error')
+            }
+          } catch (otpError) {
+            addToast('Failed to send verification code', 'error')
+          }
+        } else {
+          addToast(signupResponse.message || 'Signup failed. Please try again.', 'error')
+        }
       }
     } catch (error) {
       console.error('Signup failed:', error)
@@ -82,8 +95,8 @@ function SignupPage() {
   }
 
   const handleOTPSuccess = (user) => {
-    addToast('Account verified successfully! Welcome to Whisper Box!', 'success')
-    navigate('/home')
+    addToast('Account verified successfully! Please login to continue.', 'success')
+    navigate('/login')
   }
 
   return (

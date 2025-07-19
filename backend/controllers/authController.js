@@ -28,9 +28,24 @@ export const signup = async (req, res) => {
     });
 
     if (existingEmailUser) {
+      // If user exists but is not verified, allow them to get OTP again
+      if (!existingEmailUser.isEmailVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already registered but not verified. Please verify your email first.',
+          code: 'EMAIL_NOT_VERIFIED',
+          data: {
+            email: existingEmailUser.email,
+            needsVerification: true
+          }
+        });
+      }
+      
+      // If user exists and is verified
       return res.status(400).json({
         success: false,
-        message: 'Email already registered'
+        message: 'Email already registered and verified. Please login instead.',
+        code: 'EMAIL_ALREADY_VERIFIED'
       });
     }
 
@@ -71,28 +86,18 @@ export const signup = async (req, res) => {
     } catch (emailError) {
       console.error('❌ Failed to send verification email:', emailError.message);
       
-      // In development mode, auto-verify the user if email fails
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Development mode: Auto-verifying user due to email failure');
-        await user.update({
-          isEmailVerified: true,
-          emailVerificationToken: null,
-          emailVerificationExpires: null
-        });
-      }
+      // SECURITY FIX: Remove auto-verification in development mode
+      // Users must always verify their email regardless of environment
+      console.log('⚠️ Email verification required - email service needs to be configured properly');
     }
 
     const responseMessage = emailSent 
       ? 'Registration successful! Please check your email to verify your account.'
-      : (process.env.NODE_ENV === 'development' 
-          ? 'Registration successful! Email verification skipped in development mode.'
-          : 'Registration successful! Email verification is temporarily unavailable.');
+      : 'Registration successful! Please contact support or check your email configuration.';
 
     const dataMessage = emailSent
       ? 'A verification email has been sent to your email address.'
-      : (process.env.NODE_ENV === 'development'
-          ? 'Account automatically verified in development mode.'
-          : 'Please contact support for email verification.');
+      : 'Email verification is required but email service is currently unavailable. Please contact support.';
 
     res.status(201).json({
       success: true,
@@ -144,7 +149,16 @@ export const verifyEmail = async (req, res) => {
     await user.update({
       isEmailVerified: true,
       emailVerificationToken: null,
-      emailVerificationExpires: null
+      emailVerificationExpires: null,
+      lastLoginAt: new Date()
+    });
+
+    // Generate access and refresh tokens for immediate login
+    const { accessToken, refreshToken } = generateTokens(user.id);
+
+    // Save refresh token to database
+    await user.update({
+      refreshToken
     });
 
     // Send welcome email
@@ -156,7 +170,12 @@ export const verifyEmail = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Email verified successfully! You can now log in.'
+      message: 'Email verified successfully! You are now logged in.',
+      data: {
+        user: user.toSafeObject(),
+        accessToken,
+        refreshToken
+      }
     });
   } catch (error) {
     console.error('Email verification error:', error);
@@ -255,9 +274,14 @@ export const login = async (req, res) => {
 
     // Check if email is verified
     if (!user.isEmailVerified) {
-      return res.status(401).json({
+      return res.status(403).json({
         success: false,
-        message: 'Please verify your email address before logging in. Check your inbox for verification email.'
+        message: 'Please verify your email address before logging in.',
+        code: 'EMAIL_NOT_VERIFIED',
+        data: {
+          email: user.email,
+          needsVerification: true
+        }
       });
     }
 
@@ -704,44 +728,42 @@ export const sendOTP = async (req, res) => {
     const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
+    console.log('🔢 Generated OTP:', otpCode, 'for user:', user.email);
+
     // Update user with OTP
     await user.update({
       otpCode,
-      otpExpires
+      otpExpires,
+      otpAttempts: 0 // Reset attempts when new OTP is generated
     });
 
+    console.log('💾 OTP saved to database for user:', user.email);
+
     // Send OTP email
-    let emailSent = false;
     try {
       await sendOTPEmail(user.email, otpCode, user.fullName);
       console.log('✅ OTP email sent successfully');
-      emailSent = true;
     } catch (emailError) {
       console.error('❌ Failed to send OTP email:', emailError.message);
       
-      // In development mode, allow proceeding without email
+      // In development, log the OTP to console as fallback
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Development mode: Continuing without email, use OTP: 0000');
-        emailSent = false;
-      } else {
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to send OTP email'
-        });
+        console.log('🔧 DEVELOPMENT: OTP email failed, but OTP is:', otpCode);
+        console.log('🔧 DEVELOPMENT: Use this OTP to verify account for:', user.email);
       }
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP email'
+      });
     }
-
-    const responseMessage = emailSent 
-      ? 'OTP sent successfully'
-      : 'OTP generated successfully (development mode - use 0000)';
 
     res.json({
       success: true,
-      message: responseMessage,
+      message: 'OTP sent successfully',
       data: {
         email: user.email,
-        expiresIn: '10 minutes',
-        devMode: process.env.NODE_ENV === 'development' && !emailSent ? true : false
+        expiresIn: '10 minutes'
       }
     });
   } catch (error) {
@@ -775,38 +797,31 @@ export const verifyOTP = async (req, res) => {
       });
     }
 
-    // Development mode bypass - accept '0000' as valid OTP
-    if (process.env.NODE_ENV === 'development' && otpCode === '0000') {
-      console.log('🔧 Development mode: Using bypass OTP');
-      
-      // Verify user and clear OTP
-      await user.update({
-        isEmailVerified: true,
-        otpCode: null,
-        otpExpires: null,
-        emailVerificationToken: null,
-        emailVerificationExpires: null
-      });
+    console.log('🔍 Verifying OTP for user:', user.email);
+    console.log('📧 Stored OTP:', user.otpCode, 'Provided OTP:', otpCode);
+    console.log('⏰ OTP expires:', user.otpExpires, 'Current time:', new Date());
 
-      // Generate tokens
-      const { accessToken, refreshToken } = generateTokens(user);
-
-      return res.json({
-        success: true,
-        message: 'Email verified successfully (development mode)',
-        data: {
-          user: user.toSafeObject(),
-          accessToken,
-          refreshToken
-        }
+    // Check if too many failed attempts
+    if (user.otpAttempts >= 5) {
+      return res.status(429).json({
+        success: false,
+        message: 'Too many failed OTP attempts. Please request a new OTP.',
+        code: 'TOO_MANY_ATTEMPTS'
       });
     }
 
     // Check if OTP is valid and not expired
     if (!user.otpCode || user.otpCode !== otpCode) {
+      // Increment failed attempts
+      await user.update({
+        otpAttempts: user.otpAttempts + 1
+      });
+      
+      console.log('❌ OTP mismatch or missing');
       return res.status(400).json({
         success: false,
-        message: 'Invalid OTP code'
+        message: 'Invalid OTP code',
+        attemptsRemaining: Math.max(0, 5 - (user.otpAttempts + 1))
       });
     }
 
@@ -822,12 +837,19 @@ export const verifyOTP = async (req, res) => {
       isEmailVerified: true,
       otpCode: null,
       otpExpires: null,
+      otpAttempts: 0, // Reset attempts on successful verification
       emailVerificationToken: null,
-      emailVerificationExpires: null
+      emailVerificationExpires: null,
+      lastLoginAt: new Date()
     });
 
     // Generate tokens
-    const { accessToken, refreshToken } = generateTokens(user);
+    const { accessToken, refreshToken } = generateTokens(user.id);
+
+    // Save refresh token to database
+    await user.update({
+      refreshToken
+    });
 
     res.json({
       success: true,
@@ -883,7 +905,8 @@ export const resendOTP = async (req, res) => {
     // Update user with new OTP
     await user.update({
       otpCode,
-      otpExpires
+      otpExpires,
+      otpAttempts: 0 // Reset attempts when new OTP is generated
     });
 
     // Send OTP email
@@ -911,6 +934,46 @@ export const resendOTP = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to resend OTP',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Check verification status
+export const checkVerificationStatus = async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        email: user.email,
+        isEmailVerified: user.isEmailVerified,
+        hasOTP: !!user.otpCode,
+        otpExpires: user.otpExpires
+      }
+    });
+  } catch (error) {
+    console.error('Check verification status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check verification status',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

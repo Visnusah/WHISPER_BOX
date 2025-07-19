@@ -15,7 +15,8 @@ import {
   getMe,
   sendOTP,
   verifyOTP,
-  resendOTP
+  resendOTP,
+  checkVerificationStatus
 } from '../controllers/authController.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { uploadProfileImage } from '../middleware/upload.js';
@@ -41,6 +42,7 @@ router.post('/resend-verification', resendVerification);
 router.post('/refresh-token', refreshToken);
 router.post('/forgot-password', validateForgotPassword, forgotPassword);
 router.post('/reset-password/:token', validateResetPassword, resetPassword);
+router.get('/verification-status', checkVerificationStatus);
 
 // Protected routes
 router.get('/me', authenticateToken, getMe);

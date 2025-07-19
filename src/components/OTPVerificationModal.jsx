@@ -100,7 +100,7 @@ function OTPVerificationModal({ isOpen, onClose, email, password, onSuccess, mod
       
       if (response.success) {
         setSuccess('Verification successful!')
-        addToast('Login successful!', 'success')
+        addToast('Email verified successfully! Please login to continue.', 'success')
         setTimeout(() => {
           onSuccess(response.data.user)
           onClose()
@@ -172,12 +172,6 @@ function OTPVerificationModal({ isOpen, onClose, email, password, onSuccess, mod
               We've sent a verification code to
             </p>
             <p className="font-semibold text-gray-900 mt-1">{email}</p>
-            {/* Development mode hint */}
-            {process.env.NODE_ENV === 'development' && (
-              <p className="text-xs text-orange-600 mt-2 bg-orange-50 p-2 rounded">
-                Development mode: If you didn't receive an email, use code "0000"
-              </p>
-            )}
           </div>
 
           {/* OTP Input */}

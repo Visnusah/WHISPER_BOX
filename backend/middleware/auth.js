@@ -32,9 +32,14 @@ export const authenticateToken = async (req, res, next) => {
 
     // Check if email is verified
     if (!user.isEmailVerified) {
-      return res.status(401).json({
+      return res.status(403).json({
         success: false,
-        message: 'Please verify your email address'
+        message: 'Please verify your email address before accessing this resource',
+        code: 'EMAIL_NOT_VERIFIED',
+        data: {
+          email: user.email,
+          needsVerification: true
+        }
       });
     }
 

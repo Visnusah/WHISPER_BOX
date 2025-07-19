@@ -35,7 +35,17 @@ function LoginPage() {
         navigate('/home')
       }
     } catch (error) {
-      addToast('Login failed. Please try again.', 'error')
+      console.error('Login error:', error)
+      
+      // Handle specific error types
+      if (error.message?.includes('EMAIL_NOT_VERIFIED') || 
+          (error.response?.status === 403 && error.response?.data?.code === 'EMAIL_NOT_VERIFIED')) {
+        addToast('Please verify your email before logging in. Check your inbox or sign up again to resend OTP.', 'warning')
+      } else if (error.response?.status === 401) {
+        addToast('Invalid email or password. Please try again.', 'error')
+      } else {
+        addToast('Login failed. Please try again.', 'error')
+      }
     } finally {
       setIsLoading(false)
     }
