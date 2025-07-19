@@ -178,13 +178,13 @@ function LoginPage() {
             </p>
           </div>
 
-          {/* Demo Account Info */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          {/* Demo Account Info @by kamlesh sah  */}
+          {/* <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <h4 className="text-sm font-semibold text-blue-900 mb-2">Admin Account:</h4>
             <div className="text-xs text-blue-800">
               <p><strong>Admin:</strong> sahk0292@gmail.com / admin123</p>
             </div>
-          </div>
+          </div> */}
         </div>        <div className="text-center mt-6">
           <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
             ← Back to home

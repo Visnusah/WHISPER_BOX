@@ -131,7 +131,7 @@ function PostCard({ post, onDelete, onUpdate }) {
                 alt={post.author?.username || 'User'}
                 className="w-12 h-12 profile-avatar"
                 onError={(e) => {
-                  e.target.src = '/placeholder-avatar.png'
+                  e.target.src = '/placeholder-avatar.svg'
                 }}
               />
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>

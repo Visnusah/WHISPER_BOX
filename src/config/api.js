@@ -18,7 +18,7 @@ const API_CONFIG = {
 
 // Helper function to get full image URL
 export const getImageUrl = (imagePath) => {
-  if (!imagePath) return '/placeholder-avatar.png'
+  if (!imagePath) return '/placeholder-avatar.svg'
   if (imagePath.startsWith('http')) return imagePath
   return `${API_CONFIG.STATIC_URL}${imagePath}`
 }

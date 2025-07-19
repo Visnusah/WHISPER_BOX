@@ -73,6 +73,15 @@ function Navbar() {
                   src={getImageUrl(user.profileImage)}
                   alt={user.username}
                   className="w-9 h-9 profile-avatar"
+                  onError={(e) => {
+                    // First fallback: try the SVG directly
+                    if (e.target.src !== '/placeholder-avatar.svg') {
+                      e.target.src = '/placeholder-avatar.svg'
+                    } else {
+                      // If SVG also fails, use a data URI as last resort
+                      e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjNjM2NmYxIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9Ijc1IiByPSIzMCIgZmlsbD0id2hpdGUiLz4KPHA+YXRoIGQ9Ik01MCABNTAgUTEwMCAxMjAgMTUwIDE1MCBMMTU4IDIwMCBMNTAgMjAwIFoiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo='
+                    }
+                  }}
                 />
                 <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse-soft"></div>
               </div>

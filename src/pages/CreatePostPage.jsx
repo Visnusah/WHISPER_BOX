@@ -258,9 +258,12 @@ function CreatePostPage() {
             <div className="card border-2 border-dashed border-primary-200 bg-primary-50/30">
               <div className="flex items-center space-x-3 mb-4">
                 <img
-                  src={user.profileImage}
+                  src={user.profileImage || '/placeholder-avatar.svg'}
                   alt={user.username}
                   className="w-10 h-10 profile-avatar"
+                  onError={(e) => {
+                    e.target.src = '/placeholder-avatar.svg'
+                  }}
                 />
                 <div>
                   <h4 className="font-semibold text-text-800">{user.username}</h4>

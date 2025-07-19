@@ -258,7 +258,7 @@ function ProfilePage() {
                       alt={user?.username || 'User'}
                       className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
                       onError={(e) => {
-                        e.target.src = '/placeholder-avatar.png'
+                        e.target.src = '/placeholder-avatar.svg'
                       }}
                     />
                     <label className={`absolute bottom-0 right-0 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition-colors ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>

@@ -58,7 +58,7 @@ function LandingPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <Sparkles className="text-white w-5 h-5" />
+                {/* <Sparkles className="text-white w-5 h-5" /> */}
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">WHISPER BOX</span>
             </div>

@@ -385,7 +385,7 @@ function AdminDashboard() {
                     <div className="flex items-center">
                       <img 
                         className="h-10 w-10 rounded-full" 
-                        src={listUser.profileImage || '/placeholder-avatar.png'} 
+                        src={listUser.profileImage || '/placeholder-avatar.svg'} 
                         alt={listUser.fullName || listUser.username} 
                       />
                       <div className="ml-4">

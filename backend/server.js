@@ -19,6 +19,7 @@ import commentRoutes from './routes/commentRoutes.js';
 import savedPostRoutes from './routes/savedPostRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import voteRoutes from './routes/voteRoutes.js';
+import contactRoutes from './routes/contact.js';
 
 // Import middleware
 import { errorHandler, notFound } from './middleware/errorHandler.js';
@@ -175,6 +176,7 @@ app.use('/api/posts', commentRoutes); // Comments are nested under posts
 app.use('/api/posts', voteRoutes); // Votes are nested under posts
 app.use('/api/saved-posts', savedPostRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Catch-all for undefined routes
 app.use('*', notFound);

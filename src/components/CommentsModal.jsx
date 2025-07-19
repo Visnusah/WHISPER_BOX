@@ -102,7 +102,7 @@ function CommentsModal({ post, onClose }) {
                     alt={comment.author.username}
                     className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                     onError={(e) => {
-                      e.target.src = '/placeholder-avatar.png'
+                      e.target.src = '/placeholder-avatar.svg'
                     }}
                   />
                   <div className="flex-1 min-w-0">
