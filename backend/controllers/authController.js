@@ -434,21 +434,34 @@ export const forgotPassword = async (req, res) => {
       passwordResetExpires
     });
 
-    // Send password reset email
-    try {
-      await sendPasswordResetEmail(user.email, user.fullName, resetToken);
-    } catch (emailError) {
-      console.error('Failed to send password reset email:', emailError);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send password reset email'
+    // Send password reset email or provide reset URL for development
+    if (process.env.NODE_ENV === 'development') {
+      // In development mode, return the reset URL directly instead of sending email
+      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+      
+      res.json({
+        success: true,
+        message: 'Password reset link generated successfully (Development Mode)',
+        resetUrl: resetUrl,
+        devNote: 'In production, this link would be sent to the user\'s email. For now, copy this URL to reset password.'
       });
+    } else {
+      // Production mode - send email
+      try {
+        await sendPasswordResetEmail(user, resetToken);
+        
+        res.json({
+          success: true,
+          message: 'If an account with that email exists, a password reset link has been sent.'
+        });
+      } catch (emailError) {
+        console.error('Failed to send password reset email:', emailError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send password reset email'
+        });
+      }
     }
-
-    res.json({
-      success: true,
-      message: 'If an account with that email exists, a password reset link has been sent.'
-    });
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({
