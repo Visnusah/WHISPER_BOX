@@ -71,8 +71,10 @@ Whisper Box is a modern social media platform that allows users to share their t
 *Secure login with email verification*
 
 ### Email Verification Process
-![Email Verification Video](images/emailverification.mp4)
-*Complete email verification workflow with OTP*
+![Email Verification Demo](images/emailverification.gif)
+*Complete email verification workflow with OTP - Shows the entire process from registration to email confirmation*
+
+> **Note**: If you have the MP4 file, you can convert it to GIF using online tools or FFmpeg for better GitHub compatibility.
 
 ### Homepage Dashboard
 ![Homepage](images/homepage.png)
