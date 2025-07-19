@@ -6,7 +6,12 @@ dotenv.config();
 
 // Create transporter
 const createTransporter = () => {
-  return nodemailer.createTransport({
+  // Check if email configuration is available
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    throw new Error('Email service not configured. Please set SMTP_USER and SMTP_PASS environment variables.');
+  }
+
+  return nodemailer.createTransporter({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT) || 587,
     secure: false, // true for 465, false for other ports
@@ -18,7 +23,36 @@ const createTransporter = () => {
       rejectUnauthorized: false
     }
   });
+};sporter
+const createTransporter = () => {
+  // Check if email configuration is available
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    throw new Error('Email service not configured. Please set SMTP_USER and SMTP_PASS environment variables.');
+  }
+
+  return nodemailer.createTransporter({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+};m 'nodemailer';
+import dotenv from 'dotenv';
+import OTPVerificationEmail from '../emails/OTPVerificationEmail.js';
+
+dotenv.config();
+
+// Create transporter
+  });
 };
+
+// Send email verification
 
 // Send email verification
 export const sendVerificationEmail = async (user, verificationToken) => {
@@ -91,7 +125,7 @@ export const sendVerificationEmail = async (user, verificationToken) => {
 export const sendPasswordResetEmail = async (user, resetToken) => {
   const transporter = createTransporter();
   
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
   
   const emailHtml = `
     <!DOCTYPE html>
@@ -116,7 +150,7 @@ export const sendPasswordResetEmail = async (user, resetToken) => {
             <h1>🔐 Password Reset Request</h1>
           </div>
           <div class="content">
-            <h2>Hi ${user.username}!</h2>
+            <h2>Hi ${user.fullName || user.username}!</h2>
             <p>We received a request to reset the password for your Whisper Box account.</p>
             <div class="warning">
               <strong>⚠️ Security Notice:</strong> If you didn't request this password reset, please ignore this email and your password will remain unchanged.
