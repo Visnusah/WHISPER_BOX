@@ -9,7 +9,7 @@
 
 ## 👥 Team Members
 
-- **Kamlesh Kumar Sah** -  bankend developer & UX Designer
+- **Kamlesh Kumar Sah** -  backend developer & UX Designer
 - **Sabja Shrestha** - Frontend Developer & UI/UX Designer  
 - **Nihar Regmi** - Project Lead & Decumentation 
 - **Sarjak** - comming soon 
