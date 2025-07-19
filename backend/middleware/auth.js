@@ -23,10 +23,18 @@ export const authenticateToken = async (req, res, next) => {
 
     const user = await User.findByPk(decoded.userId);
 
-    if (!user || !user.isActive) {
+    if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'User not found or inactive'
+        message: 'User not found'
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been deactivated. Please contact support for assistance.',
+        code: 'ACCOUNT_DEACTIVATED'
       });
     }
 

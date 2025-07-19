@@ -11,7 +11,7 @@ const createTransporter = () => {
     throw new Error('Email service not configured. Please set SMTP_USER and SMTP_PASS environment variables.');
   }
 
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT) || 587,
     secure: false, // true for 465, false for other ports
@@ -22,33 +22,6 @@ const createTransporter = () => {
     tls: {
       rejectUnauthorized: false
     }
-  });
-};sporter
-const createTransporter = () => {
-  // Check if email configuration is available
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    throw new Error('Email service not configured. Please set SMTP_USER and SMTP_PASS environment variables.');
-  }
-
-  return nodemailer.createTransporter({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-};m 'nodemailer';
-import dotenv from 'dotenv';
-import OTPVerificationEmail from '../emails/OTPVerificationEmail.js';
-
-dotenv.config();
-
-// Create transporter
   });
 };
 
@@ -270,6 +243,105 @@ export const sendWelcomeEmail = async (user) => {
     console.error('❌ Error sending welcome email:', error);
     // Don't throw error for welcome email as it's not critical
     return { success: false, error: error.message };
+  }
+};
+
+// Send contact form email to admin
+export const sendContactEmail = async ({ name, email, subject, message }) => {
+  const transporter = createTransporter();
+  
+  // Subject mapping for better readability
+  const subjectMap = {
+    'account-deactivated': 'Account Deactivation Inquiry',
+    'password-reset': 'Password Reset Issues',
+    'email-verification': 'Email Verification Problems',
+    'technical-support': 'Technical Support Request',
+    'content-moderation': 'Content Moderation Question',
+    'feature-request': 'Feature Request',
+    'bug-report': 'Bug Report',
+    'other': 'General Inquiry'
+  };
+
+  const emailSubject = subjectMap[subject] || subject;
+  
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Contact Form Submission - Whisper Box</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: white; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 10px 10px; }
+          .field { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #667eea; }
+          .field-label { font-weight: bold; color: #333; margin-bottom: 5px; }
+          .field-value { color: #555; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+          .priority { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📧 Contact Form Submission</h1>
+            <p>New message from Whisper Box website</p>
+          </div>
+          <div class="content">
+            ${subject === 'account-deactivated' ? `
+              <div class="priority">
+                <strong>⚠️ Priority Message:</strong> This is an account deactivation inquiry that may require immediate attention.
+              </div>
+            ` : ''}
+            
+            <div class="field">
+              <div class="field-label">From:</div>
+              <div class="field-value">${name} (${email})</div>
+            </div>
+            
+            <div class="field">
+              <div class="field-label">Subject:</div>
+              <div class="field-value">${emailSubject}</div>
+            </div>
+            
+            <div class="field">
+              <div class="field-label">Message:</div>
+              <div class="field-value" style="white-space: pre-wrap;">${message}</div>
+            </div>
+            
+            <div class="field">
+              <div class="field-label">Submitted At:</div>
+              <div class="field-value">${new Date().toLocaleString()}</div>
+            </div>
+            
+            <p><strong>Reply Instructions:</strong> Please respond directly to ${email} to address this inquiry.</p>
+          </div>
+          <div class="footer">
+            <p>© 2024 Whisper Box - Contact Form Submission</p>
+            <p>This email was automatically generated from the website contact form.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const mailOptions = {
+    from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM}>`,
+    to: 'sahk5858@gmail.com', // Admin email
+    replyTo: email, // Allow admin to reply directly to the user
+    subject: `[Whisper Box Contact] ${emailSubject} - from ${name}`,
+    html: emailHtml
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Contact email sent to admin:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ Error sending contact email:', error);
+    throw new Error('Failed to send contact email to admin');
   }
 };
 
