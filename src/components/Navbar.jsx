@@ -14,10 +14,10 @@ function Navbar() {
   }
 
   const navItems = [
-    { path: '/home', icon: Home, label: 'Home' },
-    { path: '/trending', icon: TrendingUp, label: 'Trending' },
-    { path: '/saved', icon: Bookmark, label: 'Saved' },
-    { path: '/profile', icon: User, label: 'Profile' },
+    { path: '/home', icon: Home, label: 'Feed', title: 'Your Personal Feed' },
+    { path: '/trending', icon: TrendingUp, label: 'Discover', title: 'Trending Posts' },
+    { path: '/saved', icon: Bookmark, label: 'Bookmarks', title: 'Saved Posts' },
+    { path: '/profile', icon: User, label: 'My Profile', title: 'View Profile' },
   ]
 
   // Add admin link only for admin users
@@ -46,10 +46,11 @@ function Navbar() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`nav-link ${isActive ? 'active' : ''} inline-flex items-center space-x-2`}
+                  title={item.title}
+                  className={`nav-link ${isActive ? 'active' : ''} inline-flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{item.label}</span>
+                  <Icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                  <span className="hidden sm:inline font-medium">{item.label}</span>
                 </Link>
               )
             })}
@@ -91,7 +92,7 @@ function Navbar() {
                     {user.username}
                   </span>
                   {user?.isAdmin && (
-                    <span className="status-badge admin text-xs">Admin</span>
+                    <span className="status-badge admin text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full font-medium">Admin</span>
                   )}
                 </div>
                 <div className="text-xs text-text-500">Online</div>
